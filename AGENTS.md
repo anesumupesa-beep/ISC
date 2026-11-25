@@ -13,3 +13,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 For this project, use **only** the account `anesu.mupesa@umail.utm.ac.mu` — for Neon (console, CLI, MCP), GitHub (commits, remotes, PRs), and any other service or test account tied to ISC Connect. Never sign in with, commit as, or create resources under any other email. Git in this repo is configured locally with that email; don't override it.
 
 The Neon CLI on this machine has that account under the profile `utm` (the DEFAULT profile is a different account). Always run Neon commands with `NEON_PROFILE=utm` set (or `--profile utm`), and confirm with `neon me` before creating anything.
+
+Accounts tied to that email: GitHub `anesumupesa-beep` (repo `anesumupesa-beep/ISC`; this repo's credential helper uses `gh auth git-credential`, so keep `gh` switched to that account), Vercel `anesumupesa-7109` (project `isc-connect`, production https://isc-connect-nine.vercel.app). Vercel reserves `AWS_*` env names, so storage credentials are set there as `NEON_STORAGE_*` (see `lib/storage.ts`).

@@ -3,9 +3,13 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { authClient } from "@/lib/auth/client";
 
-// INTEGRATOR: confirm this is the right Neon Auth sign-out call (and its redirect target).
 async function signOut() {
   await authClient.signOut();
+  // Offline page copies belong to this user; don't leave them on a shared phone.
+  if ("caches" in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((k) => k.startsWith("isc-connect-")).map((k) => caches.delete(k)));
+  }
 }
 
 export function SignOutButton() {

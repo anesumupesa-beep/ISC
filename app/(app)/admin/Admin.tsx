@@ -116,6 +116,11 @@ export function Admin({
                   <div className="report-summary">
                     <strong>{listing.report?.reason}</strong>
                     <p>{listing.report?.note || "No additional note provided."}</p>
+                    {listing.report?.photoUrl && (
+                      <a href={listing.report.photoUrl} target="_blank" rel="noreferrer">
+                        View attached photo
+                      </a>
+                    )}
                   </div>
                   <div className="spread-actions">
                     <span className="small-text">Last checked: {listing.checked}</span>

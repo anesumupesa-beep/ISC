@@ -53,6 +53,7 @@ export const housingReports = pgTable("housing_reports", {
   userId: text("user_id"), // null for seed rows
   reason: text("reason").notNull(),
   note: text("note").notNull().default(""),
+  photoKey: text("photo_key"), // object key in the "uploads" bucket
   resolved: boolean("resolved").notNull().default(false),
   createdAt: createdAt(),
 });

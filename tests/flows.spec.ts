@@ -54,9 +54,10 @@ test("2–3. housing filters, report, admin verification and date refresh", asyn
     year: "numeric",
   }).format(new Date());
   await expect(async () => {
-    await page.reload();
-    await expect(card.getByText("Reported — Under Review")).toHaveCount(0);
-    await expect(card.getByText(`Last checked: ${today}`).first()).toBeVisible();
+    await page.reload(); // filters reset on reload, so target the listing by title
+    const studio = page.locator(".listing-card").filter({ hasText: "A quiet studio, close to campus" });
+    await expect(studio.getByText("Reported — Under Review")).toHaveCount(0);
+    await expect(studio.getByText(`Last checked: ${today}`)).toBeVisible();
   }).toPass();
 });
 
@@ -66,7 +67,7 @@ test("4. buddy request can be assigned by admin and appears as active match", as
 }) => {
   desktopOnly();
   await page.goto("/buddy");
-  await page.getByRole("button", { name: "Request a buddy", exact: true }).click();
+  await page.locator("[aria-pressed]").filter({ hasText: "Request a buddy" }).click();
   await page.getByLabel("Home country").fill("Zimbabwe");
   await page.getByLabel("Preferred language").selectOption("English");
   await page.getByLabel("Faculty / programme").fill("BSc Software Engineering");
@@ -151,14 +152,17 @@ test("6. welfare enquiry is hidden from admin; staff status reaches student trac
 }) => {
   const description = `Fictional demo enquiry ${Date.now()} requesting a wellbeing appointment.`;
   await page.goto("/welfare");
+  const before = await page.locator(".enquiry-row").count();
   await page.getByLabel("Enquiry category").selectOption("Health & Wellbeing");
   await page.getByLabel("Urgent — 24h", { exact: true }).check();
   await page.getByLabel("Brief description").fill(description);
   await page.getByRole("button", { name: "Submit confidential enquiry" }).click();
   // Newest enquiry is listed first; its generated reference ties the three views together.
+  // Wait for the tracker to refresh before reading the newest row.
+  await expect(page.locator(".enquiry-row")).toHaveCount(before + 1);
   const newest = page.locator(".enquiry-row").first();
   await expect(newest).toContainText("Submitted");
-  const id = (await newest.textContent())?.match(/WLF-\d{4}-\d+/)?.[0];
+  const id = (await newest.textContent())?.match(/WLF-\d{4}-\d{3}/)?.[0];
   expect(id).toBeTruthy();
 
   const admin = await pageAs(browser, "isc_admin");
@@ -217,4 +221,33 @@ test("student is kept out of staff workspaces", async ({ page }) => {
     await expect(page.getByText("Authorised Welfare Access Only")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Verify & Refresh Date" })).toHaveCount(0);
   }
+});
+
+test("housing report photo is stored in Neon Object Storage and readable by admin only", async ({
+  page,
+  browser,
+}) => {
+  test.skip(test.info().project.name !== "desktop", "creates a report; run once");
+  const title = "Bright apartment near the market";
+  await page.goto("/housing");
+  const card = page.locator(".listing-card").filter({ hasText: title });
+  await card.getByRole("button", { name: "Report outdated info", exact: true }).click();
+  await page.getByLabel("Inaccurate details").check();
+  await page.locator('input[name="photo"]').setInputFiles("public/icon-192.png");
+  await page.getByRole("button", { name: "Send report" }).click();
+  await expect(card.getByText("Reported — Under Review")).toBeVisible();
+  // Students never receive the photo link.
+  expect(await page.content()).not.toContain("housing-reports/");
+
+  const admin = await pageAs(browser, "isc_admin");
+  await admin.goto("/admin");
+  const queued = admin.locator(".queue-card").filter({ hasText: title });
+  const link = queued.getByRole("link", { name: "View attached photo" });
+  await expect(link).toBeVisible();
+  const res = await admin.request.get((await link.getAttribute("href"))!);
+  expect(res.status()).toBe(200);
+  expect((await res.body()).subarray(1, 4).toString()).toBe("PNG");
+
+  await queued.getByRole("button", { name: "Verify & Refresh Date" }).click();
+  await expect(queued).toHaveCount(0);
 });

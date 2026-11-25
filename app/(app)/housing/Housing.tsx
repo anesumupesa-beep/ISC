@@ -51,6 +51,7 @@ export function Housing({ listings }: { listings: Listing[] }) {
         selected.id,
         String(data.get("reason")),
         String(data.get("note") ?? ""),
+        data.get("photo") as File | null,
       );
       if (
         report(result, "Report sent to the ISC committee. Thank you for looking out for others.")
@@ -215,6 +216,10 @@ export function Housing({ listings }: { listings: Listing[] }) {
                 maxLength={500}
                 placeholder="A short note for the committee. No personal information, please."
               />
+            </label>
+            <label>
+              Photo <span className="muted">(optional · JPG, PNG or WebP, up to 4 MB)</span>
+              <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" />
             </label>
             <div className="modal-actions">
               <Action variant="outline" onClick={() => setModal(null)}>

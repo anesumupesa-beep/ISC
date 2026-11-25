@@ -1,0 +1,1 @@
+ALTER TABLE "housing_reports" ADD COLUMN "photo_key" text;

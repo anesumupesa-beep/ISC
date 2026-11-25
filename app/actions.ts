@@ -6,6 +6,7 @@ import {
   memberships, profiles, rsvps, volunteers, welfareEnquiries,
 } from "@/lib/db";
 import { getViewer } from "@/lib/data";
+import { uploads } from "@/lib/storage";
 import type { ActionResult, EnquiryStatus, UpdateCategory } from "@/lib/types";
 
 // CONTRACT (Agent A implements; UI calls from client components).
@@ -44,7 +45,10 @@ export async function toggleArrivalTask(taskId: number, done: boolean): Promise<
   return { ok: true };
 }
 
-export async function reportListing(listingId: number, reason: string, note: string): Promise<ActionResult> {
+const PHOTO_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
+
+export async function reportListing(listingId: number, reason: string, note: string, photo?: File | null): Promise<ActionResult> {
   const viewer = await getViewer();
   if (!viewer) return SIGNED_OUT;
   if (!isId(listingId)) return fail("Invalid listing.");
@@ -53,7 +57,15 @@ export async function reportListing(listingId: number, reason: string, note: str
   if (cleanNote === null) return fail("Please keep the note under 500 characters.");
   const [listing] = await db.select({ id: listings.id }).from(listings).where(eq(listings.id, listingId));
   if (!listing) return fail("That listing no longer exists.");
-  await db.insert(housingReports).values({ listingId, userId: viewer.userId, reason, note: cleanNote });
+  let photoKey: string | null = null;
+  if (photo && photo.size > 0) {
+    const ext = PHOTO_TYPES[photo.type];
+    if (!ext) return fail("Photos must be JPG, PNG or WebP.");
+    if (photo.size > MAX_PHOTO_BYTES) return fail("Please keep the photo under 4 MB.");
+    photoKey = `housing-reports/${listingId}/${crypto.randomUUID()}.${ext}`;
+    await uploads.upload(photoKey, photo, { contentType: photo.type });
+  }
+  await db.insert(housingReports).values({ listingId, userId: viewer.userId, reason, note: cleanNote, photoKey });
   revalidate("/housing", "/admin");
   return { ok: true, message: "Report sent to the ISC committee. Thank you for looking out for others." };
 }

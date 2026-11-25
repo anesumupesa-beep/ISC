@@ -30,7 +30,7 @@ export type Listing = {
   includes: string;
   checked: string; // display date, e.g. "14 Nov 2026"
   stale?: boolean; // last checked > 30 days ago
-  report?: { id: number; reason: string; note: string }; // open (unresolved) report, if any
+  report?: { id: number; reason: string; note: string; photoUrl?: string }; // open report; photoUrl is a short-lived link, admins only
 };
 
 export type UpdateCategory =

@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { auth } from "./auth/server";
+import { uploads } from "./storage";
 import {
   arrivalProgress, arrivalTasks, buddyRequests, clubUpdates, db, housingReports, listings,
   memberships, profiles, rsvps, volunteers, welfareEnquiries,
@@ -63,15 +64,16 @@ export async function getListings(): Promise<Listing[]> {
     }).from(listings).orderBy(asc(listings.id)),
     db.select().from(housingReports).where(eq(housingReports.resolved, false)).orderBy(desc(housingReports.createdAt)),
   ]);
-  return rows.map(({ checkedAt, stale, ...l }) => {
+  return Promise.all(rows.map(async ({ checkedAt, stale, ...l }) => {
     const r = reports.find((x) => x.listingId === l.id); // newest first
+    const photoUrl = admin && r?.photoKey ? await uploads.url(r.photoKey, { expiresIn: 600 }) : undefined;
     return {
       ...l,
       checked: formatDate(checkedAt),
       ...(stale && { stale: true }),
-      ...(r && { report: admin ? { id: r.id, reason: r.reason, note: r.note } : { id: r.id, reason: "", note: "" } }),
+      ...(r && { report: admin ? { id: r.id, reason: r.reason, note: r.note, ...(photoUrl && { photoUrl }) } : { id: r.id, reason: "", note: "" } }),
     };
-  });
+  }));
 }
 
 /** Newest first, pinned first. */

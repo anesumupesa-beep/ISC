@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
+  // Housing-report photos (max 4 MB) are sent through a server action.
+  experimental: { serverActions: { bodySizeLimit: "5mb" } },
   partialPrefetching: true,
   turbopack: {
     rules: {

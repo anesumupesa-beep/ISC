@@ -1,8 +1,6 @@
-const CACHE = "isc-connect-shell-v3";
+const CACHE = "isc-connect-next-v1";
 let offlineNavigation = false;
 const CORE = [
-  "/",
-  "/index.html",
   "/manifest.webmanifest",
   "/icon.svg",
   "/favicon.png",
@@ -15,36 +13,56 @@ const CORE = [
   "/fonts/ibm-plex-mono-400.woff2",
   "/fonts/ibm-plex-mono-500.woff2",
 ];
+// Auth and API traffic always goes to the network; welfare pages are never stored on the device.
+const NEVER_CACHE = /^\/(api|sign-in|sign-out|auth|welfare|welfare-staff)(\/|$)/;
+const OFFLINE_HTML =
+  '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline | ISC Connect</title><body style="font-family:system-ui;padding:2rem;background:#F8F6EF;color:#23335C"><h1>You’re offline.</h1><p>Open ISC Connect again once you are back online.</p></body>';
+
+async function cachePage(cache, url, response) {
+  if (!response.ok || response.redirected) return;
+  await cache.put(new URL(url).pathname, response.clone());
+  // Keep the page's own JS/CSS chunks so an offline reload hydrates and is styled.
+  const html = await response.text();
+  const assets = new Set(html.match(/\/_next\/static\/[^"'\\\s)]+/g) || []);
+  await Promise.all(
+    [...assets].map(async (asset) => {
+      if (!(await cache.match(asset))) await cache.add(asset).catch(() => {});
+    }),
+  );
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    (async () => {
-      const cache = await caches.open(CACHE);
-      await cache.addAll(CORE);
-      // Precache the built entry points before the first offline reload.
-      const response = await fetch("/index.html", { cache: "reload" });
-      const html = await response.text();
-      const assets = [...html.matchAll(/(?:src|href)=["'](\/assets\/[^"']+)["']/g)].map(
-        (match) => match[1],
-      );
-      await cache.addAll(assets);
-      await self.skipWaiting();
-    })(),
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(CORE))
+      .then(() => self.skipWaiting()),
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key.startsWith("isc-connect-") && key !== CACHE)
-            .map((key) => caches.delete(key)),
-        ),
-      )
-      .then(() => self.clients.claim()),
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((key) => key.startsWith("isc-connect-") && key !== CACHE)
+          .map((key) => caches.delete(key)),
+      );
+      await self.clients.claim();
+      // The first visited page loaded before this worker existed; store it now so it reloads offline.
+      const cache = await caches.open(CACHE);
+      const windows = await self.clients.matchAll({ type: "window" });
+      await Promise.all(
+        windows
+          .filter((client) => !NEVER_CACHE.test(new URL(client.url).pathname))
+          .map((client) =>
+            fetch(client.url)
+              .then((response) => cachePage(cache, client.url, response))
+              .catch(() => {}),
+          ),
+      );
+    })(),
   );
 });
 
@@ -55,35 +73,43 @@ self.addEventListener("message", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-  if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
-  if (event.request.mode === "navigate") {
+  const { request } = event;
+  const url = new URL(request.url);
+  // Only same-origin GETs; server-action POSTs and cross-origin requests pass straight through.
+  if (request.method !== "GET" || url.origin !== self.location.origin) return;
+  if (NEVER_CACHE.test(url.pathname)) return;
+
+  if (request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request)
+      fetch(request)
         .then((response) => {
           offlineNavigation = false;
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put("/index.html", copy));
-          }
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE).then((cache) => cachePage(cache, request.url, copy)));
           return response;
         })
-        .catch(() => {
+        .catch(async () => {
           offlineNavigation = true;
-          return caches.match("/index.html");
+          return (
+            (await caches.match(url.pathname)) ||
+            (await caches.match("/")) ||
+            new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } })
+          );
         }),
     );
     return;
   }
-  if (!url.pathname.startsWith("/assets/") && !CORE.includes(url.pathname)) return;
+
+  // RSC payloads (?_rsc=) and other dynamic GETs are not cached: only hashed build output and core assets.
+  if (!url.pathname.startsWith("/_next/static/") && !CORE.includes(url.pathname)) return;
   event.respondWith(
-    caches.match(event.request).then(
+    caches.match(request).then(
       (cached) =>
         cached ||
-        fetch(event.request).then((response) => {
+        fetch(request).then((response) => {
           if (response.ok) {
             const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+            event.waitUntil(caches.open(CACHE).then((cache) => cache.put(request, copy)));
           }
           return response;
         }),

@@ -15,7 +15,13 @@ export const PNG = Buffer.from(
   "base64",
 );
 
-export const adminPage = (browser: Browser): Promise<Page> => pageAs(browser, "isc_admin");
+/** Admin page whose label lookups ignore hidden copies: Next keeps the previous route (e.g. /new) mounted but hidden after a redirect. */
+export async function adminPage(browser: Browser): Promise<Page> {
+  const page = await pageAs(browser, "isc_admin");
+  const byLabel = page.getByLabel.bind(page);
+  page.getByLabel = ((t, o) => byLabel(t, o).locator("visible=true")) as Page["getByLabel"];
+  return page;
+}
 
 /** Delete every E2E-CMS row, its revisions and media (DB rows and S3 objects). Safe to run any time. */
 export async function cleanup() {

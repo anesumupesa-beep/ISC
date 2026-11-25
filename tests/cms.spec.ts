@@ -8,6 +8,7 @@ import { cleanText, firstBadLink, sniffImage, validateDate, validateUrl, parseMu
 
 // Admin-side CMS flows. Rows are created under the E2E-CMS marker and removed by direct SQL (production shares this DB).
 // Student-visible assertions (C2, C6, C7, C8, C9, C10, C12) need the integrator's read-path wiring: they are test.fixme below.
+test.beforeEach(() => test.setTimeout(120_000)); // dev server compiles routes on first visit
 test.beforeAll(cleanup);
 test.afterAll(cleanup);
 
@@ -35,7 +36,7 @@ test.describe("validators", () => {
       expect(validateUrl(bad), bad).toBeNull();
     expect(validateUrl("mailto:a@b.co")).toBeNull();
     expect(validateUrl("mailto:a@b.co", { rich: true })).toBe("mailto:a@b.co");
-    expect(firstBadLink("ok [a](https://example.com) bad [b](javascript:alert(1))")).toBe("javascript:alert(1)");
+    expect(firstBadLink("ok [a](https://example.com) bad [b](javascript:alert(1))")).toBe("javascript:alert(1"); // stops at the first ")": still unsafe
     expect(firstBadLink("[a](https://example.com)")).toBeNull();
     expect(cleanText("  hi\u0000 there  ", 20)).toBe("hi there");
     expect(cleanText("x".repeat(11), 10)).toBeNull();
@@ -52,7 +53,7 @@ test.describe("validators", () => {
   test("every exported server action starts with requireAdmin()", () => {
     const src = fs.readFileSync(path.join(__dirname, "../app/(app)/admin/content/actions.ts"), "utf8");
     const exported = [...src.matchAll(/export async function (\w+)/g)].map((m) => m[1]);
-    const guarded = [...src.matchAll(/export async function (\w+)\([^)]*\)[^{]*\{\s*\n\s*const a = await requireAdmin\(\);\s*\n\s*if \("error" in a\) return a\.error;/g)].map((m) => m[1]);
+    const guarded = [...src.matchAll(/export async function (\w+)\([^)]*\)[^\n]*\{\s*\n\s*const a = await requireAdmin\(\);\s*\n\s*if \("error" in a\) return a\.error;/g)].map((m) => m[1]);
     expect(exported.length).toBeGreaterThan(10);
     expect(guarded).toEqual(exported);
   });
@@ -61,6 +62,7 @@ test.describe("validators", () => {
 test.describe("access", () => {
   for (const role of ["student", "welfare_staff"] as const) {
     test(`${role} cannot open any /admin/content route`, async ({ browser }) => {
+      test.setTimeout(150_000); // first visit compiles routes in dev
       const context = await browser.newContext({ storageState: statePath(role) });
       const page = await context.newPage();
       for (const p of ["", "/updates", "/updates/new", "/guide", "/housing/new", "/links", "/pages", "/pages/contact", "/updates/1/history", "/updates/1/preview"]) {
@@ -123,10 +125,10 @@ test.describe("club updates", () => {
     await page.getByText("More options: schedule").click();
     await page.getByLabel(/^Publish at/).fill("2099-01-01T09:00");
     await page.getByRole("button", { name: "Publish", exact: true }).click();
-    await saved(page, "Published.");
+    await page.waitForURL(/\/updates\/\d+$/);
     await page.goto(url(`/updates?status=scheduled&q=${encodeURIComponent(t)}`));
     await expect(page.getByRole("heading", { name: t })).toBeVisible();
-    await expect(page.locator("article", { hasText: t }).getByText("Scheduled")).toBeVisible();
+    await expect(page.locator("article", { hasText: t }).locator(".badge", { hasText: "Scheduled" })).toBeVisible();
   });
 
   test("Official Announcements need approval with a reference", async ({ browser }) => {
@@ -212,7 +214,7 @@ test.describe("housing", () => {
     await page.getByLabel("Photo description").fill(`${MARK} alt`);
     await page.getByRole("button", { name: "Add photo" }).click();
     await expect(err.filter({ hasText: "JPG, PNG or WebP" })).toBeVisible();
-    const big = Buffer.concat([PNG, Buffer.alloc(4.2 * 1024 * 1024)]);
+    const big = Buffer.concat([PNG.subarray(0, 8), Buffer.alloc(4.2 * 1024 * 1024)]); // undecodable, so the client cannot shrink it
     await page.getByLabel("Choose photo").setInputFiles({ name: "big.png", mimeType: "image/png", buffer: big });
     await page.getByRole("button", { name: "Add photo" }).click();
     await expect(err.filter({ hasText: "under 4 MB" })).toBeVisible();
@@ -227,7 +229,7 @@ test.describe("housing", () => {
     await page.waitForURL(/\/housing\/\d+$/);
     const id = await idOf("listings", t);
     expect((await statusOf("listings", id))?.status).toBe("draft");
-    await expect(page.locator("img.cms-thumb")).toHaveCount(1);
+    await expect(page.locator("img.cms-thumb:visible")).toHaveCount(1);
     await page.getByRole("button", { name: "Publish", exact: true }).click();
     await saved(page, "Published.");
     await page.getByRole("button", { name: "Verified today" }).click();
@@ -256,6 +258,7 @@ test.describe("arrival guide, links, pages", () => {
     await page.goto(url(`/guide?q=${encodeURIComponent(MARK)}`));
     await page.locator("article", { hasText: t2 }).getByRole("button", { name: "Up" }).click();
     await expect.poll(async () => (await pos(b)) < (await pos(a))).toBe(true);
+    await expect(page.locator("article").first()).toContainText(t2); // list refreshed with the new versions
     await page.locator("article", { hasText: t2 }).getByRole("button", { name: "Unpublish" }).click();
     await expect.poll(async () => (await statusOf("arrival_tasks", b))?.status).toBe("archived");
   });

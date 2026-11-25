@@ -2506,7 +2506,7 @@ legend > span {
     flex-direction: column;
   }
 }
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-width: 960px) and (max-height: 500px) {
   .main-footer .mobile-install {
     display: inline-flex;
   }
@@ -3392,7 +3392,7 @@ legend > span {
     font-size: 12px;
   }
 }
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-width: 960px) and (max-height: 500px) {
   .role-switcher > span {
     font-size: 10px;
   }
@@ -3452,3 +3452,297 @@ legend > span {
     font-size: 10px;
   }
 }
+
+/* ---- Phone comfort pass: readable type, 44px targets, no zoom-on-focus, safe areas. ---- */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+button,
+a,
+select,
+label {
+  touch-action: manipulation;
+}
+.app-shell,
+.main-shell {
+  min-height: 100dvh;
+}
+.main-content,
+.modal-body,
+.update-copy,
+.listing-content,
+.detail-list dd,
+.row-title {
+  overflow-wrap: anywhere;
+}
+.auth-page button,
+.auth-page a,
+.auth-page input {
+  min-height: 44px;
+}
+@media (max-width: 767px), (max-width: 960px) and (max-height: 500px) {
+  /* 16px inputs stop Android/iOS from zooming the page on focus. */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  select,
+  input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 48px;
+  }
+  /* Type floor: nothing below 12px (these were 7-11px on the desktop-first sheet). */
+  .eyebrow,
+  .small-label,
+  .category,
+  .badge,
+  .pinned,
+  .tab-count,
+  .property-type,
+  .listing-reference,
+  .micro-meta,
+  .small-text,
+  .form-footnote,
+  .mobile-context,
+  .mobile-context > button,
+  .role-switcher > span,
+  .role-switcher button,
+  .user-profile .avatar,
+  .update-copy > p:not(.category),
+  .update-row.full .update-copy > p:not(.category),
+  .advisory p,
+  .advisory p strong,
+  .info-banner p,
+  .section-heading .text-link,
+  .filter-bar label,
+  .filter-bar .toggle-label,
+  .filter-chips button,
+  .listing-actions .button,
+  .listing-actions .subtle-action,
+  .subtle-action,
+  .buddy-inline p,
+  .buddy-inline .avatar,
+  .tabs > button,
+  .tabs.compact > button,
+  .task-heading p,
+  .detail-list > div,
+  .detail-list .badge,
+  .match-card .eyebrow,
+  .match-card .badge,
+  .modal-body .location,
+  .modal-body > .eyebrow,
+  .toast p,
+  .offline-banner,
+  .main-footer p,
+  .main-footer > div,
+  .main-footer button,
+  .privacy-banner .small-text,
+  .queue-card > p,
+  .enquiry-row > span:not(.badge),
+  .helpful-links .eyebrow,
+  .community-mark > span,
+  .aside-note p,
+  .island-copy .eyebrow,
+  .card-top .badge,
+  .membership-card .button,
+  .row-title,
+  .mono {
+    font-size: 12px;
+  }
+  .bottom-nav button > span,
+  .listing-price span,
+  .step-fraction,
+  .date-tile span,
+  .mini-avatars > span,
+  .island-photo span,
+  .event-date span,
+  .arrival-summary .small-label,
+  .arrival-summary p,
+  .advisory .eyebrow,
+  .advisory.extended p,
+  .advisory .text-link,
+  .update-row .category,
+  .update-row .pinned,
+  .update-row > .button,
+  .update-copy .category,
+  .enquiry-row p,
+  .quick-card .micro-meta,
+  .guidance-card .small-text,
+  .guidance-card .small-text strong,
+  .guidance-card .text-link,
+  .form-card .form-footnote,
+  .form-footnote,
+  .guidance-card li,
+  .guidance-card ul,
+  .small-text a {
+    font-size: 12px;
+  }
+  /* !important: a floor that must beat the page-specific rules above. */
+  .main-content
+    :is(.eyebrow, .category, .small-text, .form-footnote, .text-link, .step-fraction, .advisory p, li, .mono) {
+    font-size: 12px !important;
+  }
+  .advisory > button {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tabs > button {
+    min-width: 44px;
+  }
+  .filter-bar select,
+  .filter-bar input:not([type="checkbox"]) {
+    font-size: 16px;
+  }
+  .filter-bar label {
+    min-width: 0;
+  }
+  .updates-list .button,
+  .update-row > .button {
+    min-height: 44px;
+  }
+  .small-text a {
+    display: inline-block;
+    padding: 12px 6px;
+    margin: -12px -6px;
+  }
+  /* Targets: at least 44px tall, and wide enough to hit with a thumb. */
+  .button,
+  .text-link,
+  .subtle-action,
+  .tabs > button,
+  .filter-chips button,
+  .main-footer button,
+  .mobile-context > button,
+  .role-switcher button,
+  .helpful-links > a,
+  .helpful-links > button,
+  .row-title,
+  .utility-bar a,
+  .user-profile button,
+  .toast > button {
+    min-height: 44px;
+  }
+  .button,
+  .text-link,
+  .subtle-action,
+  .tabs > button,
+  .filter-chips button,
+  .main-footer button,
+  .mobile-context > button,
+  .row-title,
+  .user-profile button {
+    display: inline-flex;
+    align-items: center;
+  }
+  .button {
+    justify-content: center;
+  }
+  .icon-button,
+  .update-row > .icon-button,
+  .toast > button {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .update-row > .icon-button {
+    width: 44px;
+  }
+  .main-footer > div {
+    gap: 4px 18px;
+  }
+  .listing-actions {
+    gap: 8px 16px;
+  }
+  .listing-actions .button {
+    padding: 10px 14px;
+  }
+  .checkbox-options label,
+  .radio-options label,
+  .consent,
+  .filter-bar .toggle-label {
+    min-height: 44px;
+    font-size: 14px;
+  }
+  input[type="checkbox"]:not(.switch),
+  input[type="radio"] {
+    width: 22px;
+    height: 22px;
+  }
+  input.switch {
+    min-height: 0;
+  }
+  .tabs {
+    gap: 4px 20px;
+  }
+  .role-switcher > div {
+    flex: 0 0 auto;
+  }
+  .role-switcher button {
+    flex: 0 0 auto;
+    padding: 8px 18px;
+  }
+  .mobile-brand {
+    min-height: 44px;
+    align-items: center;
+  }
+  .utility-bar {
+    padding-top: max(15px, env(safe-area-inset-top));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+  .modal-backdrop {
+    padding: max(15px, env(safe-area-inset-top)) max(15px, env(safe-area-inset-right))
+      max(15px, env(safe-area-inset-bottom)) max(15px, env(safe-area-inset-left));
+  }
+  .modal {
+    max-height: calc(100dvh - 30px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+  }
+}
+/* Short landscape phones: keep the bottom bar and chrome from eating the screen. */
+@media (max-width: 960px) and (max-height: 500px) {
+  .bottom-nav {
+    height: calc(52px + env(safe-area-inset-bottom));
+  }
+  .toast {
+    bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+  /* One compact header row instead of three stacked ones. */
+  .utility-bar {
+    min-height: 0;
+    flex-wrap: nowrap;
+    align-items: center;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    gap: 12px;
+  }
+  .role-switcher {
+    order: 0;
+    width: auto;
+    margin-left: auto;
+  }
+  .user-profile {
+    margin-left: 0;
+  }
+  .mobile-context {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+  .main-content {
+    padding-top: 20px;
+  }
+}
+@supports (padding: max(0px)) {
+  .bottom-nav {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+

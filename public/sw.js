@@ -1,4 +1,4 @@
-const CACHE = "isc-connect-next-v1";
+const CACHE = "isc-connect-next-v2";
 let offlineNavigation = false;
 const CORE = [
   "/manifest.webmanifest",
@@ -13,8 +13,8 @@ const CORE = [
   "/fonts/ibm-plex-mono-400.woff2",
   "/fonts/ibm-plex-mono-500.woff2",
 ];
-// Auth and API traffic always goes to the network; welfare pages are never stored on the device.
-const NEVER_CACHE = /^\/(api|sign-in|sign-out|auth|welfare|welfare-staff)(\/|$)/;
+// Auth and API traffic always goes to the network; welfare and admin pages are never stored on the device.
+const NEVER_CACHE = /^\/(api|sign-in|sign-out|auth|admin|welfare|welfare-staff)(\/|$)/;
 const OFFLINE_HTML =
   '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline | ISC Connect</title><body style="font-family:system-ui;padding:2rem;background:#F8F6EF;color:#23335C"><h1>You’re offline.</h1><p>Open ISC Connect again once you are back online.</p></body>';
 

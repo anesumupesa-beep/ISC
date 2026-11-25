@@ -176,6 +176,7 @@ export async function publishUpdate(input: { category: UpdateCategory; title: st
 export async function submitEnquiry(input: { category: string; urgency: string; description: string; contact: string }): Promise<ActionResult> {
   const viewer = await getViewer();
   if (!viewer) return SIGNED_OUT;
+  if (viewer.role === "isc_admin") return fail("Welfare enquiries are for students; please use the welfare staff contact.");
   if (!ENQUIRY_CATEGORIES.includes(input?.category)) return fail("Choose an enquiry category.");
   if (!URGENCIES.includes(input?.urgency)) return fail("Choose how soon you need support.");
   if (!CONTACTS.includes(input?.contact)) return fail("Choose a preferred contact method.");

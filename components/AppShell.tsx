@@ -262,11 +262,13 @@ export function AppShell({
           </header>
           <div className="mobile-context">
             <span>{currentTitle}</span>
-            <button onClick={() => router.push("/welfare")}>
-              <Icon name="shield" size={14} />
-              Welfare support
-              <Icon name="arrow" size={14} />
-            </button>
+            {student && (
+              <button onClick={() => router.push("/welfare")}>
+                <Icon name="shield" size={14} />
+                Welfare support
+                <Icon name="arrow" size={14} />
+              </button>
+            )}
           </div>
           {offline && (
             <div className="offline-banner">

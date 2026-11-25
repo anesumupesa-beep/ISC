@@ -52,7 +52,9 @@ export async function getCompletedTaskIds(): Promise<number[]> {
 }
 
 export async function getListings(): Promise<Listing[]> {
-  if (!(await getViewer())) return [];
+  const viewer = await getViewer();
+  if (!viewer) return [];
+  const admin = viewer.role === "isc_admin";
   const [rows, reports] = await Promise.all([
     db.select({
       id: listings.id, title: listings.title, area: listings.area, type: listings.type,
@@ -67,7 +69,7 @@ export async function getListings(): Promise<Listing[]> {
       ...l,
       checked: formatDate(checkedAt),
       ...(stale && { stale: true }),
-      ...(r && { report: { id: r.id, reason: r.reason, note: r.note } }),
+      ...(r && { report: admin ? { id: r.id, reason: r.reason, note: r.note } : { id: r.id, reason: "", note: "" } }),
     };
   });
 }
@@ -167,7 +169,8 @@ const toEnquiry = ({ createdAt, ...e }: typeof welfareEnquiries.$inferSelect): E
 /** The viewer's own enquiries (student tracker). */
 export async function getMyEnquiries(): Promise<Enquiry[]> {
   const viewer = await getViewer();
-  if (!viewer) return [];
+  // Committee members never get welfare rows, not even their own.
+  if (!viewer || viewer.role === "isc_admin") return [];
   const rows = await db.select().from(welfareEnquiries)
     .where(eq(welfareEnquiries.userId, viewer.userId)).orderBy(desc(welfareEnquiries.createdAt));
   return rows.map(toEnquiry);

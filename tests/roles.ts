@@ -18,7 +18,7 @@ export const accounts = {
 export const statePath = (role: keyof typeof accounts) => `tests/.auth/${role}.json`;
 
 /** A second signed-in page for another role, alongside the student's own page. */
-export async function pageAs(browser: Browser, role: keyof typeof accounts) {
-  const context = await browser.newContext({ storageState: statePath(role) });
+export async function pageAs(browser: Browser, role: keyof typeof accounts, viewport?: { width: number; height: number }) {
+  const context = await browser.newContext({ storageState: statePath(role), ...(viewport && { viewport }) });
   return context.newPage();
 }

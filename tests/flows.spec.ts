@@ -42,9 +42,9 @@ test("2–3. housing filters, report, admin verification and date refresh", asyn
   await expect(card.getByText("Reported — Under Review")).toBeVisible();
 
   const admin = await pageAs(browser, "isc_admin");
-  await admin.goto("/admin");
+  await admin.goto("/admin/housing");
   const report = admin.locator(".queue-card").filter({ hasText: "A quiet studio, close to campus" });
-  await expect(report.getByText("Rent price changed", { exact: true })).toBeVisible();
+  await expect(report.getByText(/Rent price changed/).first()).toBeVisible();
   await report.getByRole("button", { name: "Verify & Refresh Date" }).click();
   await expect(report).toHaveCount(0);
 
@@ -76,16 +76,14 @@ test("4. buddy request can be assigned by admin and appears as active match", as
   await expect(page.getByText("Pending Match", { exact: true })).toBeVisible();
 
   const admin = await pageAs(browser, "isc_admin");
-  await admin.goto("/admin");
-  await admin.getByRole("button", { name: /Buddy matching/ }).click();
-  const request = admin
-    .locator(".queue-card")
-    .filter({ hasText: "BSc Software Engineering" })
-    .filter({ hasNotText: "Matched" })
-    .first();
-  await request.getByLabel("Available volunteer").selectOption("Sameer Seebaluck");
+  await admin.goto("/admin/buddies");
+  const request = admin.locator(".queue-card").filter({ hasText: "BSc Software Engineering" }).first();
+  const sameer = await request.locator("option", { hasText: "Sameer Seebaluck" }).getAttribute("value");
+  await request.getByLabel("Available volunteer").selectOption(sameer!);
   await request.getByRole("button", { name: "Assign Match" }).click();
-  await expect(admin.getByText("Matched", { exact: true }).first()).toBeVisible();
+  await expect(request).toHaveCount(0); // leaves the pending list once matched
+  await admin.goto("/admin/buddies?status=matched");
+  await expect(admin.getByText("Matched with Sameer Seebaluck").first()).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Sameer Seebaluck" })).toBeVisible();
@@ -128,8 +126,7 @@ test("5. RSVP toggles and membership registration confirms", async ({ page }) =>
 test("5b. admin can publish a notice to the student feed", async ({ page, browser }) => {
   const title = `Demo transport update ${Date.now()}`;
   const admin = await pageAs(browser, "isc_admin");
-  await admin.goto("/admin");
-  await admin.getByRole("button", { name: "Publish club update", exact: true }).click();
+  await admin.goto("/admin/publish");
   await admin.getByLabel("Update category").selectOption("Weather & Holidays");
   await admin.getByLabel("Title", { exact: true }).fill(title);
   await admin
@@ -216,7 +213,7 @@ test("all screens fit the viewport, imagery loads, dialogs close with Escape", a
 });
 
 test("student is kept out of staff workspaces", async ({ page }) => {
-  for (const path of ["/admin", "/welfare-staff"]) {
+  for (const path of ["/admin", "/admin/housing", "/admin/buddies", "/admin/people", "/admin/activity", "/admin/publish", "/welfare-staff"]) {
     await page.goto(path);
     await expect(page.getByText("Authorised Welfare Access Only")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Verify & Refresh Date" })).toHaveCount(0);
@@ -240,7 +237,7 @@ test("housing report photo is stored in Neon Object Storage and readable by admi
   expect(await page.content()).not.toContain("housing-reports/");
 
   const admin = await pageAs(browser, "isc_admin");
-  await admin.goto("/admin");
+  await admin.goto("/admin/housing");
   const queued = admin.locator(".queue-card").filter({ hasText: title });
   const link = queued.getByRole("link", { name: "View attached photo" });
   await expect(link).toBeVisible();

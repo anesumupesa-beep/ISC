@@ -18,6 +18,9 @@ async function main() {
   const { id, name } = users[0];
   await sql`insert into profiles (user_id, name, role) values (${id}, ${name || email.split("@")[0]}, ${role})
             on conflict (user_id) do update set role = excluded.role`;
+  // Audit trail for the committee handover (needs the audit_log migration).
+  await sql`insert into audit_log (actor_id, actor_name, actor_role, action, entity_type, entity_id, summary)
+            values ('cli', 'Operator (CLI)', 'operator', 'role.cli', 'user', ${id}, ${`Role set to ${role} for ${name || email.split("@")[0]}`})`;
   console.log(`${email} is now ${role}.`);
 }
 

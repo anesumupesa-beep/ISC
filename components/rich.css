@@ -1,0 +1,9 @@
+/* RichText typography (student pages and CMS preview). */
+.rich { font-size: 13px; line-height: 1.7; color: #4a5260; overflow-wrap: anywhere; }
+.rich p { margin: 0 0 10px; }
+.rich ul { margin: 0 0 10px; padding-left: 20px; list-style: disc; }
+.rich li { margin-bottom: 4px; }
+.rich strong { color: var(--navy); font-weight: 600; }
+.rich a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; }
+.rich-host { color: #7b828c; font-size: 11px; }
+.rich > :last-child { margin-bottom: 0; }

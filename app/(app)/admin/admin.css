@@ -1,0 +1,168 @@
+/* Committee workspace. All classes are prefixed adm-; do not redefine global component classes. */
+
+/* Sub-nav: scrollable row of 44px pills, usable at 360px (the app-shell bottom nav is unchanged). */
+.adm-subnav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 20px;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.adm-subnav a {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.adm-subnav a.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* KPI tiles: 2 columns at 360px, 4 at >=1024px. */
+.adm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (min-width: 1024px) {
+  .adm-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.adm-tile {
+  padding: 16px;
+}
+.adm-tile strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1.1;
+  color: var(--navy);
+}
+.adm-tile span {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Attention row: icon, label, count, chevron. */
+.adm-attn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+.adm-attn:last-child { border-bottom: 0; }
+
+/* Inline bar for trends: <span class="adm-bar"><i style="width:40%"/></span> */
+.adm-bar {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: #e7ebef;
+  overflow: hidden;
+}
+.adm-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+/* Filter chips. */
+.adm-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+.adm-chips > a,
+.adm-chips > button {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.adm-chips > .active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+/* People / activity row: card on phone, table-like grid at >=1024px. */
+.adm-row {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.adm-row:last-child { border-bottom: 0; }
+@media (min-width: 1024px) {
+  .adm-row {
+    grid-template-columns: 1.2fr 1.6fr 0.8fr 0.8fr 1fr auto;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+/* Evidence thumbnail. */
+.adm-thumb {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+/* Loading skeleton. */
+.adm-skel {
+  height: 96px;
+  margin-bottom: 12px;
+  background: linear-gradient(90deg, #eef1f4, #f8f9fa, #eef1f4);
+  background-size: 200% 100%;
+  animation: adm-skel 1.4s ease-in-out infinite;
+}
+@keyframes adm-skel {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .adm-skel { animation: none; }
+}
+
+/* Button group: stacked and full width below 768px. */
+.adm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.adm-actions .button,
+.adm-actions button,
+.adm-actions select {
+  min-height: 44px;
+  min-width: 44px;
+}
+@media (min-width: 768px) {
+  .adm-actions { flex-direction: row; flex-wrap: wrap; }
+}

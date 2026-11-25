@@ -6,6 +6,7 @@ export default defineConfig({
   buckets: {
     // "private" is the default; use "public_read" for anonymous reads
     uploads: { access: "private" },
+    "content-public": { access: "public_read" }, // CMS listing photos (not sensitive, cacheable)
   },
   // Branch policy: per-branch tuning
   branch: (branch) => {

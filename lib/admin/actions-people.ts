@@ -5,19 +5,21 @@ import type { ActionResult } from "@/lib/types";
 import { auditEntry } from "./audit";
 import { runBatch } from "./batch";
 import { adminGate } from "./guard";
-import { fail, revalidate } from "./util";
+import { fail, FORBIDDEN, revalidate } from "./util";
 
 const GRANTABLE = ["student", "isc_admin"];
 
-/** Only student <-> isc_admin can be changed here; every other role stays operator-only. */
+/** Owner only. Only student <-> isc_admin can be changed here; every other role stays operator-only. */
 export async function setUserRole(userId: string, role: "student" | "isc_admin"): Promise<ActionResult> {
   const g = await adminGate();
   if (!g.ok) return g.result;
+  if (!g.viewer.isOwner) return FORBIDDEN;
   if (typeof userId !== "string" || !userId || userId.length > 100) return fail("Invalid user.");
   if (!GRANTABLE.includes(role)) return fail("That role is managed by the platform operator.");
   if (userId === g.viewer.userId) return fail("You can't change your own role.");
-  const [target] = await db.select({ name: profiles.name, role: profiles.role }).from(profiles).where(eq(profiles.userId, userId));
+  const [target] = await db.select({ name: profiles.name, role: profiles.role, isOwner: profiles.isOwner }).from(profiles).where(eq(profiles.userId, userId));
   if (!target) return fail("That user no longer exists.");
+  if (target.isOwner) return fail("The owner account can only be changed by the platform operator.");
   if (!GRANTABLE.includes(target.role)) return fail("That role is managed by the platform operator.");
   if (target.role === role) return fail("They already have that role.");
   const { viewer } = g;

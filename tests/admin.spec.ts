@@ -239,7 +239,7 @@ test("A5. buddies: volunteers need approval, capacity is enforced, reassign/unas
     await expect(admin.getByText(new RegExp(text)).first()).toBeVisible();
 });
 
-test("A6. people: search, role change with confirmation, protected rows, audited", async ({ browser }) => {
+test("A6. people: search, protected rows, role changes and invites are owner-only", async ({ browser }) => {
   desktopOnly();
   test.setTimeout(120_000);
   const { email } = accounts.student();
@@ -258,29 +258,13 @@ test("A6. people: search, role change with confirmation, protected rows, audited
   await expect(admin.getByText("Managed by operator")).toBeVisible();
   await expect(admin.getByRole("button", { name: "Change role" })).toHaveCount(0);
 
+  // The e2e admin is not the owner: no role changes and no invite panel, and the student stays a student.
   await admin.goto(`/admin/people?q=${encodeURIComponent(email)}`);
-  try {
-    await row(admin, email).getByRole("button", { name: "Change role" }).click();
-    await expect(admin.getByRole("dialog").getByText(/ISC Admin can see all member names/)).toBeVisible();
-    await admin.getByRole("dialog").getByRole("button", { name: "Confirm change" }).click();
-    await expect(row(admin, email).getByText("ISC Admin", { exact: true })).toBeVisible();
-    await student.goto("/admin");
-    await expect(student.getByRole("heading", { name: "Committee dashboard." })).toBeVisible();
-  } finally {
-    await admin.goto(`/admin/people?q=${encodeURIComponent(email)}`);
-    const demote = row(admin, email).getByRole("button", { name: "Change role" });
-    if (await row(admin, email).getByText("ISC Admin", { exact: true }).count()) {
-      await demote.click();
-      await admin.getByRole("dialog").getByRole("button", { name: "Confirm change" }).click();
-      await expect(row(admin, email).getByText("Student", { exact: true })).toBeVisible();
-    }
-  }
+  await expect(row(admin, email).getByText("Owner only", { exact: true })).toBeVisible();
+  await expect(admin.getByRole("button", { name: "Change role" })).toHaveCount(0);
+  await expect(admin.getByRole("heading", { name: "Invite an admin" })).toHaveCount(0);
   await student.goto("/admin");
   await expect(student.getByText(/could not be found/i)).toBeVisible();
-
-  await admin.goto("/admin/activity?type=user");
-  await expect(admin.getByText(/from student to isc_admin/).first()).toBeVisible();
-  await expect(admin.getByText(/from isc_admin to student/).first()).toBeVisible();
 });
 
 test("A7. export: members CSV is safe, minimal, no-store and audited", async ({ browser }) => {
@@ -332,4 +316,37 @@ test("A9. every admin screen fits 360px with 44px targets", async ({ browser }) 
     expect(small, path).toEqual([]);
   }
   await admin.context().close();
+});
+
+test("A10. admin invite: only the invited email can accept, once, and it is audited", async ({ browser }) => {
+  desktopOnly();
+  test.setTimeout(120_000);
+  const { createHash } = await import("node:crypto");
+  const { neon } = await import("@neondatabase/serverless");
+  const sql = neon(process.env.DATABASE_URL!);
+  const token = `e2e-invite-${Date.now()}-abcdefghijklmnop`;
+  const student = accounts.student().email.toLowerCase();
+  const [owner] = await sql`select user_id from profiles where is_owner limit 1`;
+  const hash = createHash("sha256").update(token).digest("hex");
+  const add = (email: string, h: string) => sql`insert into admin_invites (email, token_hash, invited_by, invited_by_name, expires_at)
+    values (${email}, ${h}, ${owner?.user_id ?? "e2e"}, 'E2E owner', now() + interval '1 day')`;
+  await add(student, hash);
+  const wrong = `e2e-invite-${Date.now()}-wrongemailtoken00`;
+  await add("someone.else@example.com", createHash("sha256").update(wrong).digest("hex"));
+  const user = await pageAs(browser, "student");
+  try {
+    await user.goto(`/invite/${wrong}`);
+    await user.getByRole("button", { name: "Accept invite" }).click();
+    await expect(user.getByText(/sent to a different email/)).toBeVisible();
+    await user.goto(`/invite/${token}`);
+    await user.getByRole("button", { name: "Accept invite" }).click();
+    await expect(user.getByRole("heading", { name: "Committee dashboard." })).toBeVisible();
+    await user.goto(`/invite/${token}`);
+    await user.getByRole("button", { name: "Accept invite" }).click();
+    await expect(user.getByText(/invalid, expired or already used|already has committee/)).toBeVisible();
+  } finally {
+    await sql`update profiles set role = 'student' where user_id in (select id::text from neon_auth."user" where lower(email) = ${student}) and not is_owner`;
+    await sql`delete from admin_invites where email in (${student}, 'someone.else@example.com')`;
+    await sql`delete from audit_log where action = 'admin.invite_accept' and detail->>'email' = ${student}`;
+  }
 });

@@ -22,6 +22,8 @@ export const profiles = pgTable("profiles", {
   name: text("name").notNull(),
   country: text("country"),
   programme: text("programme"),
+  // The main committee account: the only one that can invite, promote or demote admins. Set via `pnpm db:set-role <email> isc_admin --owner`.
+  isOwner: boolean("is_owner").notNull().default(false),
   createdAt: createdAt(),
 });
 

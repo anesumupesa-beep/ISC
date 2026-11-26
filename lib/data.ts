@@ -36,7 +36,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     await db.insert(profiles).values({ userId: user.id, name }).onConflictDoNothing();
     [profile] = await db.select().from(profiles).where(eq(profiles.userId, user.id));
   }
-  return { userId: user.id, name: profile.name, email: user.email, role: profile.role };
+  return { userId: user.id, name: profile.name, email: user.email, role: profile.role, isOwner: profile.isOwner };
 });
 
 export async function getArrivalTasks(): Promise<ArrivalTask[]> {

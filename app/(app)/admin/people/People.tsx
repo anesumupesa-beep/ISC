@@ -10,7 +10,7 @@ import { roleLabel, type Role } from "@/lib/types";
 const exportKinds = [["members", "Members CSV"], ["volunteers", "Volunteers CSV"]] as const;
 const GRANTABLE = ["student", "isc_admin"];
 
-export function People({ rows, selfId, total }: { rows: PersonRow[]; selfId: string; total: number }) {
+export function People({ rows, selfId, total, isOwner }: { rows: PersonRow[]; selfId: string; total: number; isOwner: boolean }) {
   const { report } = useShell();
   const [pending, startTransition] = useTransition();
   const [target, setTarget] = useState<PersonRow | null>(null);
@@ -44,10 +44,14 @@ export function People({ rows, selfId, total }: { rows: PersonRow[]; selfId: str
               <span>
                 {p.userId === selfId ? (
                   <span className="small-text">You</span>
-                ) : GRANTABLE.includes(p.role) ? (
+                ) : p.isOwner ? (
+                  <span className="small-text">Owner</span>
+                ) : !GRANTABLE.includes(p.role) ? (
+                  <span className="small-text">Managed by operator</span>
+                ) : isOwner ? (
                   <Action variant="outline" onClick={() => setTarget(p)}>Change role</Action>
                 ) : (
-                  <span className="small-text">Managed by operator</span>
+                  <span className="small-text">Owner only</span>
                 )}
               </span>
             </div>

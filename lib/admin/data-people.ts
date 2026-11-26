@@ -22,7 +22,7 @@ export async function getPeople(opts: { q?: string; filter?: PeopleFilter; page?
     : f === "volunteers" ? sql`and v.id is not null` : sql``;
   const qSql = q ? sql`and (p.name ilike ${like} or u.email ilike ${like})` : sql``;
   const res = await db.execute(sql`
-    select p.user_id as "userId", p.name, coalesce(u.email, '') as email, p.role::text as role,
+    select p.user_id as "userId", p.name, coalesce(u.email, '') as email, p.role::text as role, p.is_owner as "isOwner",
            coalesce(u."createdAt", p.created_at) as joined, (m.user_id is not null) as member,
            (v.id is not null) as volunteer, count(*) over() as total
     from profiles p
@@ -36,7 +36,7 @@ export async function getPeople(opts: { q?: string; filter?: PeopleFilter; page?
   return {
     total: Number(rows[0]?.total ?? 0),
     rows: rows.map((r) => ({
-      userId: String(r.userId), name: String(r.name), email: String(r.email), role: String(r.role),
+      userId: String(r.userId), name: String(r.name), email: String(r.email), role: String(r.role), isOwner: Boolean(r.isOwner),
       joined: formatDate(r.joined as string | Date), member: Boolean(r.member), volunteer: Boolean(r.volunteer),
     })),
   };

@@ -35,7 +35,7 @@ export type VolunteerRow = {
 };
 
 export type PersonRow = {
-  userId: string; name: string; email: string; role: string; joined: string; member: boolean; volunteer: boolean;
+  userId: string; name: string; email: string; role: string; isOwner: boolean; joined: string; member: boolean; volunteer: boolean;
 };
 
 export type Kpi = { key: string; label: string; value: string; sub: string; source: string };

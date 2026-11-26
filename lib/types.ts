@@ -8,7 +8,7 @@ export const roleLabel: Record<Role, string> = {
   welfare_staff: "Welfare Staff",
 };
 
-export type Viewer = { userId: string; name: string; email: string; role: Role };
+export type Viewer = { userId: string; name: string; email: string; role: Role; isOwner: boolean };
 
 export type ArrivalTask = {
   id: number;

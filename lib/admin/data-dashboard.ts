@@ -19,7 +19,7 @@ export async function getDashboard(range: Range): Promise<Dashboard> {
   const [att, arrival, buddy, vol, housing, reasons, uptake, weeks] = await Promise.all([
     one(sql`select
       (select count(*) from housing_reports where not resolved) as open_reports,
-      (select count(*) from listings l where l.checked_at < ${TODAY} - 30
+      (select count(*) from listings l where l.checked_at < ${TODAY} - 30 and l.status = 'published' and l.deleted_at is null
          and not exists (select 1 from housing_reports r where r.listing_id = l.id and not r.resolved)) as stale,
       (select count(*) from buddy_requests where volunteer_id is null and closed_at is null) as unmatched,
       (select count(*) from volunteers where approved_at is null) as pending_vols,

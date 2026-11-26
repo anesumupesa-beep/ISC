@@ -87,24 +87,24 @@ const arrivalTasks = [
 ];
 
 const listings = [
-  { id: 1, title: "A quiet studio, close to campus", area: "La Tour Koenig", type: "Studio", price: 9500, walk: "8 min walk to UTM", includes: "Wi-Fi & water included", checkedAt: "2026-11-14" },
-  { id: 2, title: "A light-filled room by the coast", area: "Pointe-aux-Sables", type: "Private Room", price: 7500, walk: "12 min by bus to UTM", includes: "Furnished · Shared kitchen", checkedAt: "2026-11-13" },
-  { id: 3, title: "Two-bedroom student apartment", area: "Beau Bassin", type: "Shared Apartment", price: 6500, walk: "20 min by bus to UTM", includes: "Water included · 2 students", checkedAt: "2026-09-12" },
-  { id: 4, title: "Your own space in Rose Hill", area: "Rose Hill", type: "Studio", price: 12000, walk: "25 min by bus to UTM", includes: "Wi-Fi · Private kitchenette", checkedAt: "2026-11-12" },
-  { id: 5, title: "A welcoming home near campus", area: "La Tour Koenig", type: "Private Room", price: 6000, walk: "10 min walk to UTM", includes: "Water included · Shared bathroom", checkedAt: "2026-11-14" },
-  { id: 6, title: "Bright apartment near the market", area: "Quatre Bornes", type: "Shared Apartment", price: 8500, walk: "35 min by bus to UTM", includes: "Furnished · Near metro station", checkedAt: "2026-11-11" },
-  { id: 7, title: "Coastal studio with a small terrace", area: "Pointe-aux-Sables", type: "Studio", price: 14000, walk: "15 min by bus to UTM", includes: "Wi-Fi & water included", checkedAt: "2026-11-10" },
-  { id: 8, title: "Simple, comfortable student room", area: "Beau Bassin", type: "Private Room", price: 6800, walk: "20 min by bus to UTM", includes: "Furnished · Shared kitchen", checkedAt: "2026-11-15" },
-  { id: 9, title: "Room in a friendly shared home", area: "Rose Hill", type: "Private Room", price: 8000, walk: "30 min by bus to UTM", includes: "Wi-Fi included · Near bus stop", checkedAt: "2026-11-15" },
-  { id: 10, title: "A spacious place to settle in", area: "Quatre Bornes", type: "Studio", price: 18000, walk: "40 min by bus to UTM", includes: "Furnished · Private bathroom", checkedAt: "2026-09-03" },
-  { id: 11, title: "Campus-side shared apartment", area: "La Tour Koenig", type: "Shared Apartment", price: 7000, walk: "6 min walk to UTM", includes: "Water included · 3 students", checkedAt: "2026-11-14" },
-  { id: 12, title: "A peaceful room with a garden", area: "Pointe-aux-Sables", type: "Private Room", price: 9000, walk: "15 min by bus to UTM", includes: "Wi-Fi included · Shared kitchen", checkedAt: "2026-11-16" },
+  { id: 1, title: "A quiet studio, close to campus", area: "La Tour Koenig", type: "Studio", price: 9500, walk: "8 min walk to UTM", includes: "Wi-Fi & water included", checkedAt: "2026-11-14", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 2, title: "A light-filled room by the coast", area: "Pointe-aux-Sables", type: "Private Room", price: 7500, walk: "12 min by bus to UTM", includes: "Furnished · Shared kitchen", checkedAt: "2026-11-13", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 3, title: "Two-bedroom student apartment", area: "Beau Bassin", type: "Shared Apartment", price: 6500, walk: "20 min by bus to UTM", includes: "Water included · 2 students", checkedAt: "2026-09-12", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 4, title: "Your own space in Rose Hill", area: "Rose Hill", type: "Studio", price: 12000, walk: "25 min by bus to UTM", includes: "Wi-Fi · Private kitchenette", checkedAt: "2026-11-12", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 5, title: "A welcoming home near campus", area: "La Tour Koenig", type: "Private Room", price: 6000, walk: "10 min walk to UTM", includes: "Water included · Shared bathroom", checkedAt: "2026-11-14", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 6, title: "Bright apartment near the market", area: "Quatre Bornes", type: "Shared Apartment", price: 8500, walk: "35 min by bus to UTM", includes: "Furnished · Near metro station", checkedAt: "2026-11-11", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 7, title: "Coastal studio with a small terrace", area: "Pointe-aux-Sables", type: "Studio", price: 14000, walk: "15 min by bus to UTM", includes: "Wi-Fi & water included", checkedAt: "2026-11-10", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 8, title: "Simple, comfortable student room", area: "Beau Bassin", type: "Private Room", price: 6800, walk: "20 min by bus to UTM", includes: "Furnished · Shared kitchen", checkedAt: "2026-11-15", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 9, title: "Room in a friendly shared home", area: "Rose Hill", type: "Private Room", price: 8000, walk: "30 min by bus to UTM", includes: "Wi-Fi included · Near bus stop", checkedAt: "2026-11-15", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 10, title: "A spacious place to settle in", area: "Quatre Bornes", type: "Studio", price: 18000, walk: "40 min by bus to UTM", includes: "Furnished · Private bathroom", checkedAt: "2026-09-03", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 11, title: "Campus-side shared apartment", area: "La Tour Koenig", type: "Shared Apartment", price: 7000, walk: "6 min walk to UTM", includes: "Water included · 3 students", checkedAt: "2026-11-14", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
+  { id: 12, title: "A peaceful room with a garden", area: "Pointe-aux-Sables", type: "Private Room", price: 9000, walk: "15 min by bus to UTM", includes: "Wi-Fi included · Shared kitchen", checkedAt: "2026-11-16", contact: "Demo landlord · +230 5XXX XXXX", isSample: true },
 ];
 
 const updates = [
-  { id: 1, category: "Official Announcements" as const, title: "Your 2026–27 student handbook is here", description: "From campus essentials to everyday life in Mauritius, find your feet with the updated international student handbook.", meta: "Student Affairs · 3 min read", pinned: false, createdAt: new Date("2026-11-16T09:00:00+04:00") },
-  { id: 2, category: "Events" as const, title: "International Students Welcome Mixer", description: "New country, new connections. Meet fellow students and the ISC committee over an easy afternoon of conversation.", meta: "UTM Main Auditorium · 14:00–16:00", pinned: false, createdAt: new Date("2026-11-22T09:00:00+04:00") },
-  { id: 3, category: "Weather & Holidays" as const, title: "Weather notice & campus transport updates", description: "Heavy rain advisory for Port Louis and La Tour Koenig. Allow extra travel time, avoid flooded roads and confirm bus services before leaving.", meta: "Campus notice · Check official sources", pinned: true, createdAt: new Date("2026-11-17T09:00:00+04:00") },
+  { id: 1, category: "Official Announcements" as const, title: "Your 2026–27 student handbook is here", description: "From campus essentials to everyday life in Mauritius, find your feet with the updated international student handbook.", meta: "Student Affairs · 3 min read", pinned: false, createdAt: new Date("2026-11-16T09:00:00+04:00"), isSample: true },
+  { id: 2, category: "Events" as const, title: "International Students Welcome Mixer", description: "New country, new connections. Meet fellow students and the ISC committee over an easy afternoon of conversation.", meta: "UTM Main Auditorium · 14:00–16:00", pinned: false, createdAt: new Date("2026-11-22T09:00:00+04:00"), isSample: true },
+  { id: 3, category: "Weather & Holidays" as const, title: "Weather notice & campus transport updates", description: "Heavy rain advisory for Port Louis and La Tour Koenig. Allow extra travel time, avoid flooded roads and confirm bus services before leaving.", meta: "Campus notice · Check official sources", pinned: true, createdAt: new Date("2026-11-17T09:00:00+04:00"), isSample: true },
 ];
 
 const volunteers = [

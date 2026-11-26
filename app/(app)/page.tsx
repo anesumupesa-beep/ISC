@@ -9,6 +9,7 @@ import {
   getUpdates,
   getViewer,
 } from "@/lib/data";
+import { getQuickLinks } from "@/lib/cms/read";
 import { Overview } from "./Overview";
 
 export const metadata = { title: "Overview" };
@@ -19,7 +20,7 @@ export default async function OverviewPage() {
   // Staff land on their own workspace, as the prototype's role views did.
   if (viewer.role === "isc_admin") redirect("/admin");
   if (viewer.role === "welfare_staff") redirect("/welfare-staff");
-  const [tasks, completed, request, buddy, listings, updates, rsvps] = await Promise.all([
+  const [tasks, completed, request, buddy, listings, updates, rsvps, quickLinks] = await Promise.all([
     getArrivalTasks(),
     getCompletedTaskIds(),
     getMyBuddyRequest(),
@@ -27,6 +28,7 @@ export default async function OverviewPage() {
     getListings(),
     getUpdates(),
     getMyRsvps(),
+    getQuickLinks(),
   ]);
   return (
     <Overview
@@ -39,6 +41,7 @@ export default async function OverviewPage() {
       latest={updates.slice(0, 3)}
       weather={updates.find((u) => u.category === "Weather & Holidays") ?? null}
       rsvps={rsvps}
+      quickLinks={quickLinks}
     />
   );
 }

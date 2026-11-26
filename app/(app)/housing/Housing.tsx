@@ -7,7 +7,7 @@ import { Icon } from "@/components/icons";
 import { Modal } from "@/components/Modal";
 import { Action, Badge, PageHeading } from "@/components/ui";
 import type { Listing } from "@/lib/types";
-import { housingAreas, housingBudgets, reportReasons, roomTypes } from "@/lib/ui";
+import { housingBudgets, reportReasons, roomTypes } from "@/lib/ui";
 
 function Verification({ listing }: { listing: Listing }) {
   return listing.report ? (
@@ -24,10 +24,17 @@ function Verification({ listing }: { listing: Listing }) {
   );
 }
 
+const DEMO_CONTACT = "Demo landlord · +230 5XXX XXXX";
+
 export function Housing({ listings }: { listings: Listing[] }) {
   const { report } = useShell();
-  const [area, setArea] = useState(housingAreas[0]);
-  const [budget, setBudget] = useState(housingBudgets.at(-1)!);
+  // Filter options come from the data, so a new area or a pricier room never disappears behind a fixed list.
+  const areas = ["All Areas", ...[...new Set(listings.map((l) => l.area))].sort()];
+  const top = Math.max(...listings.map((l) => l.price), 0);
+  const budgets = top > housingBudgets.at(-1)! ? [...housingBudgets, Math.ceil(top / 1000) * 1000] : housingBudgets;
+  const anySample = listings.some((l) => l.sample);
+  const [area, setArea] = useState(areas[0]);
+  const [budget, setBudget] = useState(budgets.at(-1)!);
   const [roomType, setRoomType] = useState(roomTypes[0]);
   const [recentOnly, setRecentOnly] = useState(false);
   const [modal, setModal] = useState<{ type: "report" | "listing"; listingId: number } | null>(null);
@@ -76,15 +83,15 @@ export function Housing({ listings }: { listings: Listing[] }) {
         <Icon name="info" size={19} />
         <p>
           A check is a starting point, not a guarantee. Visit the property, confirm the terms, and
-          never send a deposit before viewing. All listings and contacts in this prototype are
-          demonstration data.
+          never send a deposit before viewing.
+          {anySample && " Some listings and contacts in this prototype are demonstration data."}
         </p>
       </div>
       <div className="filter-bar surface">
         <label>
           Area
           <select aria-label="Area" value={area} onChange={(e) => setArea(e.target.value)}>
-            {housingAreas.map((item) => (
+            {areas.map((item) => (
               <option key={item}>{item}</option>
             ))}
           </select>
@@ -92,7 +99,7 @@ export function Housing({ listings }: { listings: Listing[] }) {
         <label>
           Maximum monthly budget
           <select value={budget} onChange={(e) => setBudget(Number(e.target.value))}>
-            {housingBudgets.map((value) => (
+            {budgets.map((value) => (
               <option value={value} key={value}>
                 Rs {value.toLocaleString()} / month
               </option>
@@ -127,14 +134,23 @@ export function Housing({ listings }: { listings: Listing[] }) {
         {filtered.map((listing) => (
           <article className="listing-card surface" key={listing.id}>
             <div className={`listing-illustration art-${listing.id % 3}`}>
-              <div className="building">
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
-              </div>
+              {listing.photos?.length ? (
+                <div className="listing-photos">
+                  {listing.photos.map((photo) => (
+                    // eslint-disable-next-line @next/next/no-img-element -- already downscaled by the CMS upload
+                    <img key={photo.url} src={photo.url} alt={photo.alt} width={640} height={420} loading="lazy" />
+                  ))}
+                </div>
+              ) : (
+                <div className="building">
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              )}
               <span className="property-type">{listing.type}</span>
               <span className="listing-reference">ISC / {String(listing.id).padStart(3, "0")}</span>
             </div>
@@ -182,8 +198,8 @@ export function Housing({ listings }: { listings: Listing[] }) {
           <Action
             variant="outline"
             onClick={() => {
-              setArea(housingAreas[0]);
-              setBudget(housingBudgets.at(-1)!);
+              setArea(areas[0]);
+              setBudget(budgets.at(-1)!);
               setRoomType(roomTypes[0]);
               setRecentOnly(false);
             }}
@@ -261,20 +277,20 @@ export function Housing({ listings }: { listings: Listing[] }) {
               </div>
               <div>
                 <dt>Contact</dt>
-                <dd>Demo landlord · +230 5XXX XXXX</dd>
-              </div>
-              <div>
-                <dt>Email</dt>
-                <dd>housing-{selected.id}@example.com</dd>
+                <dd>
+                  {selected.contact ?? (selected.sample ? DEMO_CONTACT : "Ask the ISC committee for this listing’s contact")}
+                </dd>
               </div>
             </dl>
-            <div className="info-banner">
-              <Icon name="info" size={18} />
-              <p>
-                Illustrative listing only — no real room is being advertised. For actual housing
-                guidance, contact UTM Student Affairs through the official university website.
-              </p>
-            </div>
+            {selected.sample && (
+              <div className="info-banner">
+                <Icon name="info" size={18} />
+                <p>
+                  Illustrative listing only — no real room is being advertised. For actual housing
+                  guidance, contact UTM Student Affairs through the official university website.
+                </p>
+              </div>
+            )}
             <a className="text-link" href="https://www.utm.ac.mu/" target="_blank" rel="noreferrer">
               UTM official website
               <Icon name="external" size={14} />

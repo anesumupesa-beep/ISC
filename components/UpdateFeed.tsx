@@ -5,7 +5,8 @@ import type { ClubUpdate } from "@/lib/types";
 import { useShell } from "./AppShell";
 import { Icon } from "./icons";
 import { Modal } from "./Modal";
-import { Action } from "./ui";
+import { RichText } from "./RichText";
+import { Action, Badge } from "./ui";
 
 /** RSVP ids with instant (optimistic) toggling, like the prototype. */
 export function useRsvps(initial: number[]) {
@@ -57,8 +58,17 @@ export function UpdateRow({
         <button className="row-title" onClick={onOpen}>
           {update.title}
         </button>
-        <p>{full ? update.description : update.meta}</p>
+        {full ? <RichText text={update.description} /> : <p>{update.meta}</p>}
         {full && <p className="update-meta">{update.meta}</p>}
+        {full && (update.venue || update.time) && (
+          <p className="update-meta">{[update.venue, update.time].filter(Boolean).join(" · ")}</p>
+        )}
+        {update.approved && (
+          <Badge tone="positive">
+            <Icon name="shield" size={13} />
+            UTM approved
+          </Badge>
+        )}
       </div>
       {full && update.category === "Events" ? (
         <Action variant={going ? "sage small" : "outline small"} onClick={onToggle}>
@@ -91,8 +101,23 @@ export function UpdateModal({
           {update.category} · {update.day} {update.month} 2026
         </p>
         <h2>{update.title}</h2>
-        <p>{update.description}</p>
+        <RichText text={update.description} />
         <p className="small-text">{update.meta}</p>
+        {(update.venue || update.time) && (
+          <p className="small-text">{[update.venue, update.time].filter(Boolean).join(" · ")}</p>
+        )}
+        {update.approved && (
+          <Badge tone="positive">
+            <Icon name="shield" size={13} />
+            UTM approved
+          </Badge>
+        )}
+        {update.link && (
+          <a className="text-link" href={update.link.url} target="_blank" rel="noopener noreferrer">
+            {update.link.label}
+            <Icon name="external" size={15} />
+          </a>
+        )}
         {update.category === "Events" ? (
           <Action variant={going ? "sage" : "primary"} onClick={onToggle}>
             {going ? (
@@ -105,6 +130,7 @@ export function UpdateModal({
             )}
           </Action>
         ) : (
+          !update.link && (
           <a
             className="text-link"
             href={
@@ -118,10 +144,13 @@ export function UpdateModal({
             Check the official source
             <Icon name="external" size={15} />
           </a>
+          )
         )}
-        <p className="form-footnote">
-          Illustrative 2026 notice for this interactive demo, not a live university announcement.
-        </p>
+        {update.sample && (
+          <p className="form-footnote">
+            Illustrative 2026 notice for this interactive demo, not a live university announcement.
+          </p>
+        )}
       </div>
     </Modal>
   );

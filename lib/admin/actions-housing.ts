@@ -1,9 +1,10 @@
 "use server";
 import { and, eq, sql } from "drizzle-orm";
-import { db, housingReports, listings } from "@/lib/db";
+import { contentRevisions, db, housingReports, listings } from "@/lib/db";
 import type { ActionResult } from "@/lib/types";
 import { auditEntry } from "./audit";
 import { runBatch } from "./batch";
+import { getRow } from "@/lib/cms/revisions";
 import { adminGate } from "./guard";
 import { fail, isId, revalidate, text } from "./util";
 
@@ -25,7 +26,10 @@ export async function reviewListing(listingId: number, outcome: "verified" | "di
   const { viewer } = g;
   await runBatch([
     ...(outcome === "verified"
-      ? [db.update(listings).set({ checkedAt: sql`(now() at time zone 'Indian/Mauritius')::date` }).where(eq(listings.id, listingId))]
+      ? [db.update(listings).set({
+        checkedAt: sql`(now() at time zone 'Indian/Mauritius')::date`,
+        version: sql`${listings.version} + 1`, updatedAt: new Date(), updatedBy: viewer.userId,
+      }).where(eq(listings.id, listingId))]
       : []),
     db.update(housingReports).set({
       resolved: true, outcome, resolutionNote: clean, resolvedBy: viewer.userId, resolvedAt: sql`now()`,
@@ -37,6 +41,15 @@ export async function reviewListing(listingId: number, outcome: "verified" | "di
       detail: { reports: Number(n) },
     }),
   ]);
+  // Revision only (the housing.* audit row above is the activity entry).
+  const row = await getRow("listing", listingId);
+  if (row) {
+    await db.insert(contentRevisions).values({
+      entityType: "listing", entityId: String(listingId), version: row.version, action: outcome === "verified" ? "verify" : "dismiss",
+      snapshot: JSON.parse(JSON.stringify(row)), changedFields: outcome === "verified" ? ["checkedAt"] : [],
+      changedBy: viewer.userId, changedByName: viewer.name,
+    }).catch((e) => console.error("housing: revision write failed", e));
+  }
   revalidate(...PATHS);
   return {
     ok: true,

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, notExists, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, notExists, sql } from "drizzle-orm";
 import { db, housingReports, listings, profiles } from "@/lib/db";
 import { uploads } from "@/lib/storage";
 import { requireAdmin } from "./guard";
@@ -36,7 +36,9 @@ export async function getStaleListings(): Promise<StaleListing[]> {
     id: listings.id, title: listings.title, area: listings.area, price: listings.price, checkedAt: listings.checkedAt,
     days: sql<number>`(${today} - ${listings.checkedAt})`,
   }).from(listings)
-    .where(and(sql`${listings.checkedAt} < ${today} - 30`, notExists(open)))
+    .where(and(
+      sql`${listings.checkedAt} < ${today} - 30`, notExists(open), eq(listings.status, "published"), isNull(listings.deletedAt),
+    ))
     .orderBy(asc(listings.checkedAt), asc(listings.id));
   return rows.map(({ checkedAt, ...r }) => ({ ...r, days: Number(r.days), checked: formatDate(checkedAt) }));
 }

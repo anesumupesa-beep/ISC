@@ -8,7 +8,7 @@ import { accounts, pageAs } from "./roles";
 // Tests that create records or change roles run on desktop only and assume `pnpm db:reset-e2e` beforehand.
 const desktopOnly = () => test.skip(test.info().project.name !== "desktop", "creates records; reset to rerun");
 
-const ADMIN_ROUTES = ["/admin", "/admin/housing", "/admin/buddies", "/admin/people", "/admin/activity", "/admin/publish"];
+const ADMIN_ROUTES = ["/admin", "/admin/housing", "/admin/buddies", "/admin/people", "/admin/activity", "/admin/content"];
 const HOUSING = "Room in a friendly shared home";
 
 // A5 registers the E2E student as a volunteer with a request of its own. Remove both so the

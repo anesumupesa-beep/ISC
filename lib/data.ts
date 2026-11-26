@@ -1,10 +1,11 @@
 import "server-only";
 import { cache } from "react";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { auth } from "./auth/server";
+import { getCompletedPublishedTaskIds, getPublishedListings, getPublishedTasks, getPublishedUpdates } from "./cms/read";
 import { uploads } from "./storage";
 import {
-  arrivalProgress, arrivalTasks, buddyRequests, clubUpdates, db, housingReports, listings,
+  buddyRequests, db, housingReports,
   memberships, profiles, rsvps, volunteers, welfareEnquiries,
 } from "./db";
 import type {
@@ -39,54 +40,36 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
 });
 
 export async function getArrivalTasks(): Promise<ArrivalTask[]> {
-  if (!(await getViewer())) return [];
-  return db.select().from(arrivalTasks).orderBy(asc(arrivalTasks.id));
+  return getPublishedTasks();
 }
 
-/** Task ids the viewer has completed. */
+/** Task ids the viewer has completed (only tasks students can still see). */
 export async function getCompletedTaskIds(): Promise<number[]> {
-  const viewer = await getViewer();
-  if (!viewer) return [];
-  const rows = await db.select({ id: arrivalProgress.taskId }).from(arrivalProgress)
-    .where(eq(arrivalProgress.userId, viewer.userId));
-  return rows.map((r) => r.id);
+  return getCompletedPublishedTaskIds();
 }
 
+/** Published listings. Open-report details and photo links are admin-only; students get only a flag. */
 export async function getListings(): Promise<Listing[]> {
   const viewer = await getViewer();
   if (!viewer) return [];
   const admin = viewer.role === "isc_admin";
   const [rows, reports] = await Promise.all([
-    db.select({
-      id: listings.id, title: listings.title, area: listings.area, type: listings.type,
-      price: listings.price, walk: listings.walk, includes: listings.includes, checkedAt: listings.checkedAt,
-      stale: sql<boolean>`${listings.checkedAt} < (now() at time zone 'Indian/Mauritius')::date - 30`,
-    }).from(listings).orderBy(asc(listings.id)),
+    getPublishedListings(),
     db.select().from(housingReports).where(eq(housingReports.resolved, false)).orderBy(desc(housingReports.createdAt)),
   ]);
-  return Promise.all(rows.map(async ({ checkedAt, stale, ...l }) => {
+  return Promise.all(rows.map(async (l) => {
     const r = reports.find((x) => x.listingId === l.id); // newest first
     const photoUrl = admin && r?.photoKey ? await uploads.url(r.photoKey, { expiresIn: 600 }) : undefined;
     return {
       ...l,
-      checked: formatDate(checkedAt),
-      ...(stale && { stale: true }),
       ...(r && { report: admin ? { id: r.id, reason: r.reason, note: r.note, ...(photoUrl && { photoUrl }) } : { id: r.id, reason: "", note: "" } }),
     };
   }));
 }
 
-/** Newest first, pinned first. */
+/** Live updates: pinned first, then newest. */
 export async function getUpdates(): Promise<ClubUpdate[]> {
-  if (!(await getViewer())) return [];
-  const rows = await db.select().from(clubUpdates).orderBy(desc(clubUpdates.pinned), desc(clubUpdates.createdAt));
-  return rows.map((u) => {
-    const { day, month } = dateParts(u.createdAt);
-    return {
-      id: u.id, category: u.category, title: u.title, description: u.description, meta: u.meta,
-      day, month: month.toUpperCase(), ...(u.pinned && { pinned: true }),
-    };
-  });
+  return getPublishedUpdates();
 }
 
 export async function getMyRsvps(): Promise<number[]> {

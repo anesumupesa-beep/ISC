@@ -12,12 +12,15 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { ReactNode } from "react";
-import type { ActionResult, Viewer } from "@/lib/types";
+import { loadSitePage } from "@/app/(app)/site-page-action";
+import { adminNav, isAdminNavActive } from "@/lib/admin/nav";
+import type { ActionResult, SitePage, Viewer } from "@/lib/types";
 import { roleLabel } from "@/lib/types";
 import { initials, navigation } from "@/lib/ui";
 import type { IconName } from "./icons";
 import { Icon } from "./icons";
 import { Modal } from "./Modal";
+import { RichText } from "./RichText";
 import { SignOutButton } from "./SignOutButton";
 import { TextLink } from "./ui";
 
@@ -40,12 +43,7 @@ export function useShell() {
   return shell;
 }
 
-const modalTitles = {
-  contact: "A friendly first point of contact.",
-  about: "Inform. Connect. Support.",
-  privacy: "Privacy, with care.",
-  install: "Your student companion, on hand.",
-};
+type PageKey = "about" | "privacy" | "contact";
 
 const subscribeOnline = (cb: () => void) => {
   window.addEventListener("online", cb);
@@ -64,16 +62,19 @@ const subscribeStandalone = (cb: () => void) => {
 export function AppShell({
   viewer,
   buddyEmail,
+  pages,
   children,
 }: {
   viewer: Viewer;
   buddyEmail?: string;
+  pages?: Record<PageKey, SitePage>; // omitted for committee members, who load a page when they open it
   children: ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [modal, setModal] = useState<ShellModal>(null);
   const [toast, setToast] = useState("");
+  const [loaded, setLoaded] = useState<Partial<Record<PageKey, SitePage>>>({});
   const [installPrompt, setInstallPrompt] = useState<InstallPrompt | null>(null);
   const [justInstalled, setJustInstalled] = useState(false);
   // The worker knows when a navigation used its offline fallback, even if
@@ -98,13 +99,14 @@ export function AppShell({
         ? { page: "Welfare queue", href: "/welfare-staff", short: "Queue", icon: "lock" as IconName }
         : null;
   const home = workspace?.href ?? "/";
-  const currentTitle =
-    pathname === "/admin"
-      ? "Committee workspace"
-      : pathname === "/welfare-staff"
-        ? "Welfare workspace"
-        : (navigation.find((item) => item.href === pathname)?.page ?? "Overview");
-  const navItems = workspace ? [workspace] : navigation;
+  const admin = viewer.role === "isc_admin";
+  const currentTitle = admin
+    ? (adminNav.find((item) => isAdminNavActive(pathname, item.href))?.page ?? "Committee workspace")
+    : pathname === "/welfare-staff"
+      ? "Welfare workspace"
+      : (navigation.find((item) => item.href === pathname)?.page ?? "Overview");
+  const navItems = admin ? adminNav : workspace ? [workspace] : navigation;
+  const isActive = (href: string) => (admin ? isAdminNavActive(pathname, href) : pathname === href);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -133,6 +135,14 @@ export function AppShell({
       navigator.serviceWorker?.removeEventListener("message", workerNetworkState);
     };
   }, []);
+  useEffect(() => {
+    if (!modal || modal === "install" || pages || loaded[modal]) return;
+    let live = true;
+    loadSitePage(modal).then((page) => live && page && setLoaded((x) => ({ ...x, [modal]: page })));
+    return () => {
+      live = false;
+    };
+  }, [modal, pages, loaded]);
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(""), 5000);
@@ -165,6 +175,8 @@ export function AppShell({
     setInstallPrompt(null);
   }
 
+  const page = modal && modal !== "install" ? (pages?.[modal] ?? loaded[modal]) : undefined;
+
   return (
     <ShellContext value={shell}>
       <div className="app-shell">
@@ -192,8 +204,8 @@ export function AppShell({
               <button
                 key={item.href}
                 onClick={() => router.push(item.href)}
-                className={pathname === item.href ? "active" : ""}
-                aria-current={pathname === item.href ? "page" : undefined}
+                className={isActive(item.href) ? "active" : ""}
+                aria-current={isActive(item.href) ? "page" : undefined}
               >
                 <Icon name={item.icon} size={20} />
                 {item.page}
@@ -299,9 +311,9 @@ export function AppShell({
           {navItems.slice(0, 5).map((item) => (
             <button
               key={item.href}
-              className={pathname === item.href ? "active" : ""}
+              className={isActive(item.href) ? "active" : ""}
               onClick={() => router.push(item.href)}
-              aria-current={pathname === item.href ? "page" : undefined}
+              aria-current={isActive(item.href) ? "page" : undefined}
             >
               <Icon name={item.icon} size={21} />
               <span>{item.short}</span>
@@ -320,79 +332,37 @@ export function AppShell({
           </div>
         )}
         {modal && (
-          <Modal title={modalTitles[modal]} onClose={() => setModal(null)}>
-            {modal === "contact" && (
+          <Modal title={modal === "install" ? "Your student companion, on hand." : (page?.title ?? "One moment")} onClose={() => setModal(null)}>
+            {modal !== "install" && !page && <p className="modal-body">Loading…</p>}
+            {modal !== "install" && page && (
               <div className="modal-body">
-                <Icon name="mail" size={30} />
-                <h3>Start with your community.</h3>
-                <p>
-                  Your buddy and ISC committee can help with everyday campus questions.
-                  {buddyEmail && (
-                    <>
-                      {" "}
-                      Demo buddy email: <strong>{buddyEmail}</strong>.
-                    </>
-                  )}
-                </p>
-                <p>
-                  This prototype doesn’t send messages. For real enquiries, find the current ISC or
-                  Student Affairs contact through UTM’s official website.
-                </p>
-                <a className="button navy" href="https://www.utm.ac.mu/" target="_blank" rel="noreferrer">
-                  Find official UTM contacts
-                  <Icon name="external" size={16} />
-                </a>
-                <hr />
-                <p>For anything personal or sensitive, the welfare channel is the right place.</p>
-                <TextLink href="/welfare" onClick={() => setModal(null)}>
-                  Open confidential welfare support
-                </TextLink>
-              </div>
-            )}
-            {modal === "about" && (
-              <div className="modal-body">
-                <p>
-                  ISC Connect brings arrival guidance, checked housing, buddy support, club notices
-                  and a dedicated welfare route into one calm, useful place for international
-                  students at the University of Technology, Mauritius.
-                </p>
-                <h3>Built for a live demonstration.</h3>
-                <p>
-                  Sign in as a student, committee member or welfare staff to explore each journey.
-                  Changes connect across the student, committee and welfare views.
-                </p>
-                <p>
-                  University approval, verification and compliance labels describe the proposed
-                  platform, not an independently certified service.
-                </p>
-              </div>
-            )}
-            {modal === "privacy" && (
-              <div className="modal-body">
-                <Icon name="shield" size={30} />
-                <h3>Only what’s needed. Only for the right people.</h3>
-                <p>
-                  The proposed platform follows data-minimisation principles under the Mauritius
-                  Data Protection Act 2017, with welfare access kept separate from club
-                  administration.
-                </p>
-                <p>
-                  <strong>This is a demonstration, not a certified secure submission service.</strong>{" "}
-                  Use fictional details only.
-                </p>
-                <p>
-                  The app shell may be cached for offline access, but welfare pages and submitted
-                  welfare information are never saved to browser storage.
-                </p>
-                <a
-                  href="https://dataprotection.govmu.org/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-link"
-                >
-                  Mauritius Data Protection Office
-                  <Icon name="external" size={15} />
-                </a>
+                <Icon name={modal === "privacy" ? "shield" : modal === "contact" ? "mail" : "globe"} size={30} />
+                <h3>{page.heading}</h3>
+                <RichText text={page.body} />
+                {modal === "contact" && buddyEmail && (
+                  <p>
+                    Your buddy’s email: <strong>{buddyEmail}</strong>.
+                  </p>
+                )}
+                {page.linkUrl && (
+                  <a
+                    className={modal === "contact" ? "button navy" : "text-link"}
+                    href={page.linkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {page.linkLabel}
+                    <Icon name="external" size={16} />
+                  </a>
+                )}
+                {modal === "contact" && (
+                  <>
+                    <hr />
+                    <TextLink href="/welfare" onClick={() => setModal(null)}>
+                      Open confidential welfare support
+                    </TextLink>
+                  </>
+                )}
               </div>
             )}
             {modal === "install" && (

@@ -7,7 +7,6 @@ import { statePath } from "./roles";
 import { cleanText, firstBadLink, sniffImage, validateDate, validateUrl, parseMuDateTime } from "../lib/cms/validate";
 
 // Admin-side CMS flows. Rows are created under the E2E-CMS marker and removed by direct SQL (production shares this DB).
-// Student-visible assertions (C2, C6, C7, C8, C9, C10, C12) need the integrator's read-path wiring: they are test.fixme below.
 test.beforeEach(() => test.setTimeout(120_000)); // dev server compiles routes on first visit
 test.beforeAll(cleanup);
 test.afterAll(cleanup);
@@ -317,27 +316,157 @@ test.describe("phone layout 360px", () => {
   });
 });
 
-// Student-facing: enable once lib/data.ts and the student pages read through lib/cms/read.ts (integrator).
-test.describe("student visibility (needs read-path wiring)", () => {
-  test.fixme("C2/C3 published event shows with date tile and venue; archived is hidden", async ({ page }) => {
+// Student-facing: what students see after the committee changes content (read path through lib/cms/read.ts).
+const db = () => neon(process.env.DATABASE_URL!);
+
+test.describe("student visibility", () => {
+  test("C2/C3 published event shows with date tile and venue; archived is hidden", async ({ page, browser }) => {
+    const admin = await adminPage(browser);
+    const t = title("event visible");
+    await newUpdate(admin, { title: t, category: "Events", venue: "Main hall E2E" });
+    await admin.getByRole("button", { name: "Publish", exact: true }).click();
+    await admin.waitForURL(/\/updates\/\d+$/);
     await page.goto("/updates");
-  });
-  test.fixme("C6 scheduled and expired updates are hidden", async ({ page }) => {
+    const row = page.locator(".update-row", { hasText: t });
+    await expect(row).toBeVisible();
+    await expect(row.locator(".date-tile")).toContainText("20");
+    await expect(row.locator(".date-tile")).toContainText("DEC");
+    await expect(row).toContainText("Main hall E2E");
+    await expect(row).toContainText("14:30");
+    await expect(row.locator(".badge", { hasText: "UTM approved" })).toHaveCount(0);
+    await expect(page.getByText("Illustrative 2026 notice")).toHaveCount(0);
+
+    await admin.getByRole("button", { name: "Unpublish" }).click();
+    await saved(admin, "Archived.");
     await page.goto("/updates");
+    await expect(page.locator(".update-row", { hasText: t })).toHaveCount(0);
+    const id = await idOf("club_updates", t);
+    expect((await statusOf("club_updates", id))?.status).toBe("archived");
+    await admin.context().close();
   });
-  test.fixme("C7 published listing shows photo and contact; draft is hidden", async ({ page }) => {
+
+  test("C6 scheduled, expired, draft and deleted updates are hidden", async ({ page }) => {
+    const q = db();
+    const mk = async (what: string, col: string, value: string) => {
+      const t = title(what);
+      await q.query(`insert into club_updates (category, title, description, meta, ${col}) values ('Events', $1, 'x', 'meta', ${value})`, [t]);
+      return t;
+    };
+    const live = await mk("live", "status", "'published'");
+    const future = await mk("future", "publish_at", "now() + interval '30 days'");
+    const expired = await mk("expired", "expires_at", "now() - interval '1 day'");
+    const draft = await mk("draft", "status", "'draft'");
+    const deleted = await mk("deleted", "deleted_at", "now()");
+    await page.goto("/updates");
+    await expect(page.locator(".update-row", { hasText: live })).toBeVisible();
+    for (const t of [future, expired, draft, deleted]) await expect(page.locator(".update-row", { hasText: t }), t).toHaveCount(0);
+  });
+
+  test("C7 published listing shows photo and contact; draft is hidden", async ({ page, browser }) => {
+    const admin = await adminPage(browser);
+    const t = title("room visible");
+    await admin.goto(url("/housing/new"));
+    await admin.getByLabel(/^Title/).fill(t);
+    await admin.getByLabel(/^Area/).fill("Rose Hill");
+    await admin.getByLabel(/^Rent \(Rs/).fill("9500");
+    await admin.getByLabel(/^Walk to campus/).fill("10 min walk");
+    await admin.getByLabel(/^Rent includes/).fill("Water");
+    await admin.getByLabel(/^Contact/).fill("WhatsApp 5555 0000");
+    await admin.getByLabel("Choose photo").setInputFiles({ name: "ok.png", mimeType: "image/png", buffer: PNG });
+    await admin.getByLabel("Photo description").fill(`${MARK} alt`);
+    await admin.getByRole("button", { name: "Add photo" }).click();
+    await expect(admin.locator("img.cms-thumb")).toHaveCount(1);
+    await admin.getByRole("button", { name: "Save draft" }).click();
+    await admin.waitForURL(/\/housing\/\d+$/);
+
     await page.goto("/housing");
+    await expect(page.locator(".listing-card", { hasText: t })).toHaveCount(0);
+    await admin.getByRole("button", { name: "Publish", exact: true }).click();
+    await saved(admin, "Published.");
+    await page.goto("/housing");
+    const card = page.locator(".listing-card", { hasText: t });
+    await expect(card).toBeVisible();
+    const img = card.locator(".listing-photos img");
+    await expect(img).toHaveCount(1);
+    await img.scrollIntoViewIfNeeded();
+    await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
+    await card.getByRole("button", { name: "View Contact & Details" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("WhatsApp 5555 0000")).toBeVisible();
+    await expect(dialog.getByText("Illustrative listing only")).toHaveCount(0);
+    await admin.context().close();
   });
-  test.fixme("C8 new arrival task appears in its stage in position order; archived task leaves progress <= 100%", async ({ page }) => {
-    await page.goto("/arrival");
+
+  test("C8 new arrival task appears in its stage in position order; archived task leaves progress <= 100%", async ({ page }) => {
+    const q = db();
+    const [a, b] = [title("task first"), title("task second")];
+    for (const [i, t] of [a, b].entries())
+      await q.query("insert into arrival_tasks (section, title, detail, documents, link, url, position) values (2, $1, 'd', 'docs', '', '', $2)", [t, 500 + i]);
+    const progress = async () => {
+      const [done, total] = ((await page.getByRole("heading", { name: /of \d+ steps completed/ }).textContent()) ?? "").match(/\d+/g)!.map(Number);
+      return { done, total };
+    };
+    await page.goto("/arrival?stage=2");
+    const cards = page.locator(".task-card");
+    const titles = await cards.locator("h3").allTextContents();
+    expect(titles.indexOf(a)).toBeGreaterThanOrEqual(0);
+    expect(titles.indexOf(a)).toBeLessThan(titles.indexOf(b));
+    await cards.filter({ hasText: b }).locator("h3").click();
+    await expect(cards.filter({ hasText: b }).locator(".task-detail")).toBeVisible();
+    await expect(cards.filter({ hasText: b }).locator(".task-detail a")).toHaveCount(0); // empty link rows are not rendered
+    const before = await progress();
+    await cards.filter({ hasText: b }).getByRole("checkbox").check();
+    await expect.poll(async () => (await progress()).done).toBe(before.done + 1);
+    await q.query("update arrival_tasks set status = 'archived' where title = $1", [b]);
+    await page.goto("/arrival?stage=2");
+    const after = await progress();
+    expect(after.total).toBe(before.total - 1);
+    expect(after.done).toBe(before.done);
+    expect(after.done).toBeLessThanOrEqual(after.total);
   });
-  test.fixme("C9 edited contact page text appears in the student contact modal; reset restores the default", async ({ page }) => {
+
+  test("C9 edited contact page text appears in the student contact modal; reset restores the default", async ({ page }) => {
+    const q = db();
+    test.skip((await q`select 1 from site_pages where key = 'contact'`).length > 0, "A real contact page exists; not touching it.");
+    const t = title("contact");
+    await q.query("insert into site_pages (key, title, heading, body, status) values ('contact', $1, 'E2E heading', 'E2E custom contact text with **bold**.', 'published')", [t]);
+    try {
+      await page.goto("/");
+      await page.getByRole("button", { name: "Contact the ISC committee" }).click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog.getByText("E2E custom contact text with")).toBeVisible();
+      await expect(dialog.locator("strong", { hasText: "bold" })).toBeVisible();
+    } finally {
+      await q.query("delete from site_pages where key = 'contact' and title = $1", [t]);
+    }
     await page.goto("/");
+    await page.getByRole("button", { name: "Contact the ISC committee" }).click();
+    await expect(page.getByRole("dialog").getByText("Start with your community.")).toBeVisible();
   });
-  test.fixme("C10 published quick link appears on Overview", async ({ page }) => {
+
+  test("C10 published quick link appears on Overview; draft does not", async ({ page }) => {
+    const q = db();
+    const [live, draft] = [title("link live"), title("link draft")];
+    await q.query("insert into resource_links (label, url, position, status) values ($1, 'https://example.com/live', 900, 'published'), ($2, 'https://example.com/draft', 901, 'draft')", [live, draft]);
     await page.goto("/");
+    await expect(page.getByRole("link", { name: live })).toHaveAttribute("href", "https://example.com/live");
+    await expect(page.getByRole("link", { name: draft })).toHaveCount(0);
   });
-  test.fixme("C12 XSS title and body render as literal text on student pages", async ({ page }) => {
+
+  test("C12 XSS title and body render as literal text on student pages", async ({ page }) => {
+    const q = db();
+    const t = `${title("xss")} "><img src=x onerror=window.__x=1>`;
+    await q.query("insert into club_updates (category, title, description, meta) values ('ISC Membership', $1, $2, 'meta')", [t, "<script>window.__x=1</script> **bold** [x](javascript:alert(1))"]);
+    for (const p of ["/updates", "/"]) {
+      await page.goto(p);
+      await expect(page.locator("img[src='x']")).toHaveCount(0);
+      expect(await page.evaluate(() => (window as unknown as { __x?: number }).__x)).toBeUndefined();
+    }
     await page.goto("/updates");
+    const row = page.locator(".update-row", { hasText: "xss" }).first();
+    await expect(row.locator(".row-title")).toHaveText(t);
+    await expect(row.locator(".rich")).toContainText("<script>window.__x=1</script>");
+    await expect(row.locator(".rich strong")).toHaveText("bold");
+    await expect(row.locator(".rich a")).toHaveCount(0); // unsafe link renders as its label only
   });
 });

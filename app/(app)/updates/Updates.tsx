@@ -32,7 +32,7 @@ export function Updates({
   const filtered = updates.filter(
     (update) => updateFilter === "All" || update.category === updateFilter,
   );
-  // The aside's diary date is the first event on the noticeboard (the Welcome Mixer in the seed data).
+  // The aside's diary date is the first event on the noticeboard.
   const featuredEvent = updates.find((update) => update.category === "Events");
 
   function submitMembership(event: FormEvent<HTMLFormElement>) {
@@ -142,19 +142,16 @@ export function Updates({
             </article>
           )}
         </section>
-        <aside className="guidance-card">
-          <Icon name="calendar" size={26} />
-          <h3>A date for your diary.</h3>
-          <div className="event-date">
-            22<span>NOVEMBER 2026</span>
-          </div>
-          <h4>International Students Welcome Mixer</h4>
-          <p>
-            UTM Main Auditorium
-            <br />
-            14:00–16:00 · All students welcome
-          </p>
-          {featuredEvent && (
+        {featuredEvent && (
+          <aside className="guidance-card">
+            <Icon name="calendar" size={26} />
+            <h3>A date for your diary.</h3>
+            <div className="event-date">
+              {featuredEvent.day}
+              <span>{featuredEvent.month}</span>
+            </div>
+            <h4>{featuredEvent.title}</h4>
+            <p>{[featuredEvent.venue, featuredEvent.time].filter(Boolean).join(" · ") || featuredEvent.meta}</p>
             <Action
               variant={rsvps.includes(featuredEvent.id) ? "sage" : "outline"}
               onClick={() => toggleRsvp(featuredEvent.id)}
@@ -168,9 +165,8 @@ export function Updates({
                 "RSVP Going"
               )}
             </Action>
-          )}
-          <p className="small-text">A relaxed afternoon. No need to know anyone before you come.</p>
-        </aside>
+          </aside>
+        )}
       </div>
       {openUpdate && (
         <UpdateModal

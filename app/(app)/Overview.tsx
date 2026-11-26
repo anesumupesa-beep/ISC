@@ -6,7 +6,7 @@ import { useShell } from "@/components/AppShell";
 import { Icon } from "@/components/icons";
 import { Badge, TextLink } from "@/components/ui";
 import { UpdateModal, UpdateRow, useRsvps } from "@/components/UpdateFeed";
-import type { BuddyRequest, ClubUpdate, Volunteer } from "@/lib/types";
+import type { BuddyRequest, ClubUpdate, QuickLink, Volunteer } from "@/lib/types";
 import { initials } from "@/lib/ui";
 
 export function Overview({
@@ -19,6 +19,7 @@ export function Overview({
   latest,
   weather,
   rsvps: initialRsvps,
+  quickLinks,
 }: {
   name: string;
   completedCount: number;
@@ -29,6 +30,7 @@ export function Overview({
   latest: ClubUpdate[];
   weather: ClubUpdate | null;
   rsvps: number[];
+  quickLinks: QuickLink[];
 }) {
   const { openModal } = useShell();
   const [rsvps, toggleRsvp] = useRsvps(initialRsvps);
@@ -145,7 +147,7 @@ export function Overview({
               </p>
               <p className="micro-meta">
                 <Icon name="shield" size={13} />
-                Latest checks · 16 Nov 2026
+                Checked by your ISC committee
               </p>
               <TextLink href="/housing">Explore housing</TextLink>
             </article>
@@ -221,11 +223,13 @@ export function Overview({
           </article>
           <div className="helpful-links">
             <p className="eyebrow">KEEP THESE CLOSE</p>
-            <a href="https://www.utm.ac.mu/" target="_blank" rel="noreferrer">
-              <Icon name="globe" size={18} />
-              <span>UTM official website</span>
-              <Icon name="external" size={14} />
-            </a>
+            {quickLinks.map((link) => (
+              <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer">
+                <Icon name="globe" size={18} />
+                <span>{link.label}</span>
+                <Icon name="external" size={14} />
+              </a>
+            ))}
             <Link href="/arrival?stage=3">
               <Icon name="book" size={18} />
               <span>Campus essentials</span>

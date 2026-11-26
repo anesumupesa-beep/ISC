@@ -30,6 +30,9 @@ export type Listing = {
   includes: string;
   checked: string; // display date, e.g. "14 Nov 2026"
   stale?: boolean; // last checked > 30 days ago
+  contact?: string;
+  photos?: { url: string; alt: string }[];
+  sample?: boolean; // illustrative demo listing
   report?: { id: number; reason: string; note: string; photoUrl?: string }; // open report; photoUrl is a short-lived link, admins only
 };
 
@@ -47,6 +50,11 @@ export type ClubUpdate = {
   month: string; // "NOV"
   meta: string;
   pinned?: boolean;
+  venue?: string;
+  time?: string; // "14:30", events only
+  link?: { label: string; url: string };
+  approved?: boolean; // Official Announcement with UTM approval recorded
+  sample?: boolean;
 };
 
 export type BuddyRequest = {
@@ -81,3 +89,5 @@ export type Enquiry = {
 
 /** Every server action returns this so the UI can show a toast. */
 export type ActionResult = { ok: true; message?: string; id?: string } | { ok: false; error: string };
+
+export type { QuickLink, SitePage } from "./cms/types";

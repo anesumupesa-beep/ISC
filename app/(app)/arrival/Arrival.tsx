@@ -129,10 +129,12 @@ export function Arrival({
                       <strong>What to bring</strong>
                       <p>{task.documents}</p>
                     </div>
-                    <a href={task.url} target="_blank" rel="noreferrer" className="text-link">
-                      {task.link}
-                      <Icon name="external" size={15} />
-                    </a>
+                    {task.url && (
+                      <a href={task.url} target="_blank" rel="noreferrer" className="text-link">
+                        {task.link || "Official information"}
+                        <Icon name="external" size={15} />
+                      </a>
+                    )}
                   </div>
                 )}
               </article>

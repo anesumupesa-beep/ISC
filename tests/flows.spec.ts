@@ -126,14 +126,14 @@ test("5. RSVP toggles and membership registration confirms", async ({ page }) =>
 test("5b. admin can publish a notice to the student feed", async ({ page, browser }) => {
   const title = `Demo transport update ${Date.now()}`;
   const admin = await pageAs(browser, "isc_admin");
-  await admin.goto("/admin/publish");
-  await admin.getByLabel("Update category").selectOption("Weather & Holidays");
-  await admin.getByLabel("Title", { exact: true }).fill(title);
+  await admin.goto("/admin/content/updates/new");
+  await admin.getByLabel("Category").selectOption("Weather & Holidays");
+  await admin.getByLabel(/^Title/).fill(title);
   await admin
-    .getByLabel("Update details")
+    .getByLabel(/^Details/)
     .fill("Please confirm your campus bus route before travelling this afternoon.");
-  await admin.locator("form").getByRole("checkbox").check();
-  await admin.getByRole("button", { name: "Publish club update", exact: true }).last().click();
+  await admin.getByRole("button", { name: "Publish", exact: true }).click();
+  await admin.waitForURL(/\/admin\/content\/updates\/\d+$/);
 
   await expect(async () => {
     await page.goto("/updates");
@@ -141,6 +141,11 @@ test("5b. admin can publish a notice to the student feed", async ({ page, browse
       page.locator(".editorial-feed").getByRole("button", { name: title, exact: true }),
     ).toBeVisible({ timeout: 2_000 });
   }).toPass();
+  // Production shares this database: remove the demo notice again.
+  const { neon } = await import("@neondatabase/serverless");
+  const sql = neon(process.env.DATABASE_URL!);
+  await sql`delete from content_revisions where entity_type = 'update' and entity_id in (select id::text from club_updates where title = ${title})`;
+  await sql`delete from club_updates where title = ${title}`;
 });
 
 test("6. welfare enquiry is hidden from admin; staff status reaches student tracker", async ({
@@ -213,7 +218,7 @@ test("all screens fit the viewport, imagery loads, dialogs close with Escape", a
 });
 
 test("student is kept out of staff workspaces", async ({ page }) => {
-  for (const path of ["/admin", "/admin/housing", "/admin/buddies", "/admin/people", "/admin/activity", "/admin/publish", "/welfare-staff"]) {
+  for (const path of ["/admin", "/admin/housing", "/admin/buddies", "/admin/people", "/admin/activity", "/admin/content", "/admin/content/updates/new", "/welfare-staff"]) {
     await page.goto(path);
     await expect(page.getByText("Authorised Welfare Access Only")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Verify & Refresh Date" })).toHaveCount(0);

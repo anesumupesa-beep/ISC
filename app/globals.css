@@ -3746,3 +3746,19 @@ label {
 }
 
 
+
+/* CMS listing photos: a swipeable strip inside the card's picture area. */
+.listing-photos {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+.listing-photos img {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  scroll-snap-align: start;
+}

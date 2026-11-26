@@ -427,6 +427,7 @@ test.describe("student visibility", () => {
 
   test("C9 edited contact page text appears in the student contact modal; reset restores the default", async ({ page }) => {
     const q = db();
+    await q`delete from site_pages where key = 'contact' and title like ${MARK + "%"}`; // left by the admin page test
     test.skip((await q`select 1 from site_pages where key = 'contact'`).length > 0, "A real contact page exists; not touching it.");
     const t = title("contact");
     await q.query("insert into site_pages (key, title, heading, body, status) values ('contact', $1, 'E2E heading', 'E2E custom contact text with **bold**.', 'published')", [t]);
